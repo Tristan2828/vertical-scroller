@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "tank"
+display_name = "Tank"
+max_hp = 90
+radius = 9.0
+ground = true
+size = Vector2(16, 22)
+drift = Vector2(0, 14)
+barrel_length = 10.0
+shot_pattern = 2
+fire_interval = 2.4
+first_shot_delay = 1.2
+bullet_damage = 10
+body_color = Color(0.46, 0.55, 0.4, 1)

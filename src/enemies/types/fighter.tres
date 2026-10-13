@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "fighter"
+display_name = "Fighter"
+max_hp = 70
+radius = 8.0
+sprite = "fighter"
+contact_damage = 12
+shot_pattern = 3
+fire_interval = 2.2
+first_shot_delay = 0.8
+bullet_damage = 10

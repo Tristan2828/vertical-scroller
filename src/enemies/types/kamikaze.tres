@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "kamikaze"
+display_name = "Kamikaze"
+max_hp = 25
+radius = 6.0
+sprite = "kamikaze"
+contact_damage = 18
+dies_on_contact = true
+homing = 1
+homing_delay = 0.8
+homing_speed = 230.0

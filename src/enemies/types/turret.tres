@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "turret"
+display_name = "Turret"
+max_hp = 60
+radius = 9.0
+ground = true
+size = Vector2(20, 20)
+barrel_length = 11.0
+shot_pattern = 2
+fire_interval = 2.0
+first_shot_delay = 0.6
+bullet_damage = 8
+body_color = Color(0.55, 0.58, 0.54, 1)

@@ -125,7 +125,7 @@ func _on_server_disconnected() -> void:
 	_leave_game("Disconnected from the host.")
 
 
-## Host: show the lobby (start of a session).
+## Host: show the lobby (start of a session, and after every stage).
 func _load_lobby() -> void:
 	_clear_level()
 	var lobby: Lobby = LOBBY_SCENE.instantiate()
@@ -136,10 +136,12 @@ func _load_lobby() -> void:
 
 
 ## Host: start the stage. LevelSpawner removes the lobby and creates the stage
-## on every client too.
+## on every client too. When it's over, everyone goes back to the lobby.
 func _load_stage() -> void:
 	_clear_level()
-	_level.add_child(STAGE_SCENE.instantiate())
+	var stage: Stage = STAGE_SCENE.instantiate()
+	stage.finished.connect(_load_lobby, CONNECT_DEFERRED)
+	_level.add_child(stage)
 
 
 func _clear_level() -> void:

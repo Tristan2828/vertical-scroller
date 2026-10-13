@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "bunker"
+display_name = "Bunker"
+max_hp = 220
+radius = 17.0
+ground = true
+size = Vector2(44, 30)
+body_color = Color(0.52, 0.5, 0.46, 1)

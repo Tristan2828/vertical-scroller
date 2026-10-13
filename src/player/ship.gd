@@ -13,10 +13,17 @@ extends Node2D
 
 ## The main gun shot on input `seq` (host: every ship; client: its own, predicted).
 signal fired(ship: Ship, seq: int, focus: bool)
+## This ship lost HP (every peer: the host when the hit lands, clients when a
+## snapshot shows less HP). For effects.
+signal hurt(ship: Ship, amount: int)
 
 ## Seconds per engine flicker frame.
 const FLICKER_SECONDS: float = 0.06
 const HITBOX_COLOR: Color = Color(1.0, 0.3, 0.35)
+## Seconds per blink frame while invulnerable after a hit.
+const BLINK_SECONDS: float = 0.08
+## Seconds the whole ship flashes white when hit.
+const HURT_FLASH_SECONDS: float = 0.1
 const HITBOX_CORE: Color = Color(1.0, 1.0, 1.0)
 ## Host: inputs kept waiting at most; with more than CATCH_UP_THRESHOLD queued it
 ## simulates two per tick until it has caught up.
@@ -34,6 +41,8 @@ var slot: int = 0
 var ship_id: int = 0
 var stats: ShipStats = null
 var state: ShipState = ShipState.new()
+## Host-owned; clients copy it from snapshots.
+var health: ShipHealth = ShipHealth.new()
 var bounds: Rect2 = Rect2(Vector2.ZERO, Vector2(ScreenFit.BASE))
 ## Tests: used instead of reading the keyboard (seq is still filled in).
 var test_input: ShipInput = null
@@ -54,6 +63,7 @@ var _predictor: ClientPredictor = ClientPredictor.new()
 var _visual_offset: Vector2 = Vector2.ZERO
 var _remote_target: Vector2 = Vector2.ZERO
 var _flicker_time: float = 0.0
+var _hurt_flash_left: float = 0.0
 
 
 ## Called by the stage's spawn function, before the node enters the tree.
@@ -65,6 +75,7 @@ func setup(owner_peer_id: int, player_slot: int, ship: int, start: Vector2, area
 	name = str(owner_peer_id)
 	# Each player gets its own copy so in-run changes only affect this ship.
 	stats = Ships.ALL[ship].duplicate() as ShipStats
+	health.reset(stats.max_hp)
 	state.position = start
 	position = start
 	_remote_target = start
@@ -86,6 +97,7 @@ func display_name() -> String:
 ## Advances this ship by one physics tick.
 func tick(delta: float) -> void:
 	if multiplayer.is_server():
+		health.tick(delta)
 		if is_local():
 			_simulate(_read_local_input(delta), delta)
 		else:
@@ -97,8 +109,28 @@ func tick(delta: float) -> void:
 		_predictor.record(input.seq, state.position)
 
 
+## Host: an enemy bullet or a collision. Returns true if it landed.
+func take_hit(amount: int) -> bool:
+	if not health.take_hit(amount):
+		return false
+	_on_hurt(amount)
+	return true
+
+
+func _on_hurt(amount: int) -> void:
+	_hurt_flash_left = HURT_FLASH_SECONDS
+	hurt.emit(self, amount)
+
+
 ## Client: this ship's entry from a host snapshot.
-func apply_server_state(server_position: Vector2, ack_seq: int, focused: bool) -> void:
+func apply_server_state(server_position: Vector2, ack_seq: int, focused: bool, hp: int, max_hp: int,
+		invulnerable: bool) -> void:
+	health.max_hp = max_hp
+	if hp < health.hp:
+		_on_hurt(health.hp - hp)
+	health.hp = hp
+	# Blinks on this screen too (the exact time left doesn't matter here).
+	health.invulnerable_left = ShipHealth.HIT_SAFE_SECONDS if invulnerable else 0.0
 	if is_local():
 		var error := _predictor.reconcile(ack_seq, server_position)
 		if error == Vector2.ZERO:
@@ -165,6 +197,7 @@ func _submit_input(seq: int, move: Vector2, focus: bool, fire: bool) -> void:
 
 func _process(delta: float) -> void:
 	_flicker_time += delta
+	_hurt_flash_left = maxf(_hurt_flash_left - delta, 0.0)
 	if multiplayer.is_server():
 		position = state.position
 	elif is_local():
@@ -181,7 +214,9 @@ func _draw() -> void:
 	var frame := stats.sprite
 	if int(_flicker_time / FLICKER_SECONDS) % 2 == 1 and PixelArt.has_sprite(stats.sprite + "_1"):
 		frame = stats.sprite + "_1"
-	PixelArt.draw(self, frame, Vector2.ZERO, tint())
+	var blink_hidden := health.is_invulnerable() and int(_flicker_time / BLINK_SECONDS) % 2 == 1
+	if not blink_hidden:
+		PixelArt.draw(self, frame, Vector2.ZERO, tint(), _hurt_flash_left > 0.0)
 	if state.focused:
 		# The real hitbox: a ring the size of the hitbox around a white dot.
 		var ring := PixelArt.disc_texture(stats.hitbox_radius + 1.0, HITBOX_COLOR, stats.hitbox_radius - 0.5, HITBOX_CORE)

@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/stage/scroll_background.gd" id="2_background"]
 [ext_resource type="Script" path="res://src/enemies/enemy_manager.gd" id="3_enemies"]
 [ext_resource type="Script" path="res://src/combat/projectile_manager.gd" id="4_bullets"]
+[ext_resource type="Script" path="res://src/enemies/ground_manager.gd" id="5_ground"]
 [ext_resource type="PackedScene" path="res://src/stage/stage_hud.tscn" id="6_hud"]
 
 [node name="Stage" type="Node2D"]
@@ -12,6 +13,9 @@ script = ExtResource("1_stage")
 
 [node name="Background" type="Node2D" parent="."]
 script = ExtResource("2_background")
+
+[node name="Ground" type="Node2D" parent="."]
+script = ExtResource("5_ground")
 
 [node name="Enemies" type="Node2D" parent="."]
 script = ExtResource("3_enemies")
@@ -24,6 +28,14 @@ glow_color = Color(0.35, 0.85, 1, 0.75)
 core_color = Color(0.92, 1, 1, 1)
 
 [node name="Ships" type="Node2D" parent="."]
+
+[node name="EnemyBullets" type="Node2D" parent="."]
+script = ExtResource("4_bullets")
+hit_radius = 2.5
+glow_radius = 4.0
+core_radius = 2.0
+glow_color = Color(1, 0.3, 0.55, 0.9)
+core_color = Color(1, 0.92, 0.95, 1)
 
 [node name="ShipSpawner" type="MultiplayerSpawner" parent="."]
 spawn_path = NodePath("../Ships")

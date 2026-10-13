@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "radar"
+display_name = "Radar dish"
+max_hp = 120
+radius = 15.0
+ground = true
+size = Vector2(32, 32)
+body_color = Color(0.6, 0.63, 0.66, 1)

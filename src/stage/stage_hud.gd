@@ -1,34 +1,80 @@
 class_name StageHud
 extends CanvasLayer
-## M2's bare HUD: the auto-fire state, kills, who's playing (each name in their
-## ship color), and (host, online) the invite to send friends. The real HUD (HP
-## bars for 1–4 players, specials, Scrap) comes with M4–M6.
+## M3's gray-box HUD: your HP bar (bottom left), teammates' names in their ship
+## colors with small HP bars (top right), kills and ground targets, a thin
+## stage progress line, the auto-fire state, a center banner (stage name, stage
+## clear) and (host, online) the invite. The real HUD layout for 1–4 players
+## comes with the art pass (M6).
+
+const HP_BAR: Rect2 = Rect2(8, 522, 140, 8)
+const TEAM_BAR_SIZE: Vector2 = Vector2(60, 3)
+const PROGRESS_BAR: Rect2 = Rect2(330, 4, 300, 2)
+const BAR_BACK: Color = Color(0.05, 0.05, 0.08, 0.85)
+const BAR_EMPTY: Color = Color(0.25, 0.1, 0.12)
+const HP_COLOR: Color = Color(0.45, 0.9, 0.5)
+const HP_LOW_COLOR: Color = Color(0.95, 0.35, 0.3)
+const PROGRESS_COLOR: Color = Color(0.6, 0.65, 0.8)
 
 @onready var _left: Label = $Left
 @onready var _right: Label = $Right
 @onready var _players: VBoxContainer = $Players
 @onready var _invite: Label = $Invite
+@onready var _banner: Label = $Banner
+@onready var _hp_label: Label = $HpLabel
 
 ## Names and slots last shown, so the player list is only rebuilt when it changes.
 var _players_signature: String = ""
+var _banner_left: float = 0.0
+var _bars: Control = null
+## What the bars show (copied in show_state, drawn in _draw_bars).
+var _my_hp_ratio: float = 1.0
+var _team: Array[Ship] = []
+var _progress: float = 0.0
 
 
 func _ready() -> void:
+	_bars = Control.new()
+	_bars.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bars.draw.connect(_draw_bars)
+	add_child(_bars)
 	Net.invite.changed.connect(_show_invite)
 	_show_invite()
 
 
-func show_state(fire_mode: FireControl.Mode, firing: bool, kills: int, ships: Array[Ship]) -> void:
-	var fire_text := "Auto-fire: %s" % FireControl.MODE_NAMES[fire_mode]
-	if fire_mode != FireControl.Mode.ALWAYS:
-		fire_text += " (%s)" % ("firing" if firing else "off")
-	var left := "%s\nMouse mode: %s\nEsc / Start: menu" % [fire_text, "on" if Settings.mouse_mode else "off"]
+func _process(delta: float) -> void:
+	if _banner_left > 0.0:
+		_banner_left -= delta
+		_banner.visible = _banner_left > 0.0
+
+
+func show_banner(text: String, seconds: float) -> void:
+	_banner.text = text
+	_banner_left = seconds
+	_banner.visible = true
+
+
+func show_state(stage: Stage, me: Ship) -> void:
+	var fire_mode := Settings.fire_mode
+	var left := "Auto-fire: %s" % FireControl.MODE_NAMES[fire_mode]
+	if fire_mode != FireControl.Mode.ALWAYS and me != null:
+		left += " (%s)" % ("firing" if me.firing else "off")
 	if _left.text != left:
 		_left.text = left
-	var right := "Kills: %d" % kills
+	var right := "Kills: %d   Ground: %d/%d" % [stage.kills, stage.ground_kills, stage.ground.count()]
 	if _right.text != right:
 		_right.text = right
-	_show_players(ships)
+	if me != null:
+		_my_hp_ratio = me.health.ratio()
+		var hp_text := "HP %d/%d" % [me.health.hp, me.health.max_hp]
+		if me.health.is_empty():
+			hp_text += "  (no death until M4)"
+		if _hp_label.text != hp_text:
+			_hp_label.text = hp_text
+	_progress = stage.progress()
+	_team = stage.ships()
+	_show_players(_team)
+	_bars.queue_redraw()
 
 
 func _show_players(ships: Array[Ship]) -> void:
@@ -47,8 +93,25 @@ func _show_players(ships: Array[Ship]) -> void:
 		var label := Label.new()
 		label.text = ship.display_name()
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		label.custom_minimum_size = Vector2(0, 14)
 		label.add_theme_color_override("font_color", ship.tint())
 		_players.add_child(label)
+
+
+func _draw_bars() -> void:
+	_bar(HP_BAR, _my_hp_ratio, HP_LOW_COLOR if _my_hp_ratio < 0.3 else HP_COLOR)
+	_bar(PROGRESS_BAR, _progress, PROGRESS_COLOR)
+	if _team.size() > 1:
+		# Under each name in the player list (rows are 14 px tall).
+		for i: int in _team.size():
+			var at := Vector2(_players.position.x + _players.size.x - TEAM_BAR_SIZE.x, _players.position.y + 12.0 + i * 14.0)
+			_bar(Rect2(at, TEAM_BAR_SIZE), _team[i].health.ratio(), _team[i].tint())
+
+
+func _bar(rect: Rect2, ratio: float, color: Color) -> void:
+	_bars.draw_rect(rect.grow(1.0), BAR_BACK)
+	_bars.draw_rect(rect, BAR_EMPTY)
+	_bars.draw_rect(Rect2(rect.position, Vector2(roundf(rect.size.x * clampf(ratio, 0.0, 1.0)), rect.size.y)), color)
 
 
 func _show_invite() -> void:

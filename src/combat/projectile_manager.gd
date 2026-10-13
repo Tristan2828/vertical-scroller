@@ -10,9 +10,9 @@ extends Node2D
 ## A bullet with negative age hasn't appeared yet (patterns like spirals spawn
 ## all their bullets at once with staggered delays).
 ##
-## Two instances will exist: player bullets (hit enemies) and enemy bullets
-## (hit players, M3). Only the host's bullets will deal damage; clients' bullets
-## are visual: they vanish on contact, but the host decides the actual hits.
+## Two instances exist: player bullets (hit air enemies, then ground objects)
+## and enemy bullets (hit ships). Only the host's bullets deal damage; clients'
+## bullets are visual: they vanish on contact, but the host decides the hits.
 
 const CAPACITY: int = 4096
 
@@ -107,29 +107,81 @@ func step(delta: float) -> void:
 	queue_redraw()
 
 
-## Removes bullets touching an enemy (or uses up one pierce). With `apply_damage`
-## (host only) they also hurt it.
-func resolve_hits(enemies: EnemyManager, apply_damage: bool) -> void:
+## Removes bullets touching an air enemy, or else a ground object (or uses up
+## one pierce). With `apply_damage` (host only) they also hurt it. `ground` may
+## be null.
+func resolve_hits(enemies: EnemyManager, ground: GroundManager, apply_damage: bool) -> void:
 	var i := 0
 	while i < _count:
 		if _ages[i] < 0.0:
 			i += 1
 			continue
-		var enemy := enemies.find_hit_on_path(_path_start(i), position_of(i), hit_radius, _last_hit[i])
-		if enemy < 0:
+		var from := _path_start(i)
+		var to := position_of(i)
+		# Pierce memory: air enemies as their index, ground objects as -2 - index.
+		var target := enemies.find_hit_on_path(from, to, hit_radius, _last_hit[i])
+		var on_ground := false
+		if target < 0 and ground != null:
+			target = ground.find_hit_on_path(from, to, hit_radius, -2 - _last_hit[i])
+			on_ground = target >= 0
+		if target < 0:
 			i += 1
 			continue
-		hit_at.emit(position_of(i))
-		if apply_damage:
-			enemies.damage(enemy, _damages[i], _owners[i])
+		hit_at.emit(to)
+		if on_ground:
+			if apply_damage:
+				ground.damage(target, _damages[i], _owners[i])
+			else:
+				ground.flash(target)
+		elif apply_damage:
+			enemies.damage(target, _damages[i], _owners[i])
 		else:
-			enemies.flash(enemy)
+			enemies.flash(target)
 		if _pierce[i] > 0:
 			_pierce[i] -= 1
-			_last_hit[i] = enemy
+			_last_hit[i] = -2 - target if on_ground else target
 			i += 1
 		else:
 			_remove(i)
+
+
+## Enemy bullets vs ships. Bullets pass through ships that are blinking after a
+## hit. Host: hits cost HP. Clients: the bullet just vanishes; HP arrives in the
+## next snapshot. (Adapted from Medieval Survival's resolve_player_hits.)
+func resolve_ship_hits(ships: Array[Ship], is_host: bool) -> void:
+	# Read each hittable ship's position and reach once, not once per bullet.
+	var targets: Array[Ship] = []
+	var spots := PackedVector2Array()
+	var reaches_squared := PackedFloat32Array()
+	for ship: Ship in ships:
+		if not ship.health.is_invulnerable():
+			var reach := ship.stats.hitbox_radius + hit_radius
+			targets.append(ship)
+			spots.append(ship.state.position)
+			reaches_squared.append(reach * reach)
+	if targets.is_empty():
+		return
+	var i := 0
+	while i < _count:
+		if _ages[i] < 0.0:
+			i += 1
+			continue
+		var point := position_of(i)
+		var hit := -1
+		for t: int in targets.size():
+			if spots[t].distance_squared_to(point) <= reaches_squared[t]:
+				hit = t
+				break
+		if hit < 0:
+			i += 1
+			continue
+		var ship := targets[hit]
+		if is_host:
+			ship.take_hit(_damages[i])
+		hit_at.emit(point)
+		_remove(i)
+		if ship.health.is_invulnerable():
+			reaches_squared[hit] = -1.0  # Blinking now: later bullets pass through.
 
 
 ## Where bullet `i` was at the start of this tick.

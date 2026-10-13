@@ -5,12 +5,12 @@ extends Node2D
 ## the same place. Real stage art (tilesets, structures, parallax) replaces it.
 
 const TILE: int = 128
-const GROUND: Color = Color(0.13, 0.15, 0.17)
-const GROUND_DARK: Color = Color(0.1, 0.11, 0.13)
-const LINE: Color = Color(0.18, 0.2, 0.23)
-const PLATE: Color = Color(0.16, 0.18, 0.21)
-const RIVET: Color = Color(0.27, 0.3, 0.34)
-const STRIPE: Color = Color(0.36, 0.3, 0.12)
+## Kept dark and low-contrast so ground targets and bullets stand out.
+const GROUND: Color = Color(0.12, 0.135, 0.13)
+const GROUND_DARK: Color = Color(0.105, 0.12, 0.115)
+const LINE: Color = Color(0.15, 0.165, 0.16)
+const PLATE: Color = Color(0.135, 0.15, 0.145)
+const RIVET: Color = Color(0.19, 0.21, 0.2)
 
 ## Pixels scrolled so far (stage time x scroll speed).
 var scroll: float = 0.0:
@@ -43,9 +43,6 @@ static func _tile_texture() -> ImageTexture:
 	image.fill_rect(Rect2i(72, 8, 48, 40), PLATE)
 	for corner: Vector2i in [Vector2i(75, 11), Vector2i(116, 11), Vector2i(75, 44), Vector2i(116, 44)]:
 		image.set_pixelv(corner, RIVET)
-	# Hazard stripes along one edge.
-	for x: int in range(8, 56, 8):
-		image.fill_rect(Rect2i(x, 100, 4, 6), STRIPE)
 	# Grid lines.
 	for i: int in TILE:
 		image.set_pixel(i, 0, LINE)

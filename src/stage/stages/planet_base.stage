@@ -1,0 +1,152 @@
+# Stage 1: Planet-side military base (DESIGN.md §3 Stages). Gray-box layout.
+# Format: see src/stage/stage_def.gd. Times are seconds of stage time.
+# A ground object takes 9 s to cross the screen (540 px at 60 px/s).
+# Screen: 960 x 540; x=480 is the middle. Ships fly near the bottom.
+
+name = Planet Base
+length = 240
+scroll_speed = 60
+
+# --- Intro (0-20 s): popcorn drones, the base's outer fence ---
+wave 3    drone s_curve x=300 count=6 spacing=0.35
+wave 7    drone s_curve x=660 count=6 spacing=0.35 mirror
+ground 8  turret x=160
+ground 9  turret x=800
+wave 11   drone straight x=240 count=5 spacing=0.3 dx=120
+wave 14   drone straight x=720 count=5 spacing=0.3 dx=-120
+ground 15 bunker x=480
+wave 17   fighter dive_retreat x=320
+wave 17   fighter dive_retreat x=640 mirror
+
+# --- Outer defenses (20-60 s): turret rows, fighters ---
+ground 20 turret x=120
+ground 20 turret x=840
+ground 23 radar x=300
+ground 24 turret x=620
+wave 22   drone circle_strafe x=220 count=5 spacing=0.4
+wave 26   drone circle_strafe x=740 count=5 spacing=0.4 mirror
+ground 28 heavy_turret x=480
+wave 30   fighter dive_retreat x=200 variant=a1
+wave 30   fighter dive_retreat x=480 variant=a1
+wave 30   fighter dive_retreat x=760 mirror variant=a1
+wave 30   kamikaze straight x=300 count=4 spacing=0.6 dx=120 variant=a2
+wave 33   drone cross_screen x=-20 y=90 count=6 spacing=0.3
+ground 34 tank x=200
+ground 35 tank x=260
+ground 36 turret x=880
+wave 38   drone cross_screen x=980 y=140 count=6 spacing=0.3 mirror
+ground 40 bunker x=160
+ground 40 bunker x=800
+wave 42   fighter s_curve x=480 count=3 spacing=0.8
+wave 46   kamikaze straight x=180 count=3 spacing=0.5 dx=300
+ground 47 turret x=360
+ground 47 turret x=600
+wave 50   drone s_curve x=300 count=8 spacing=0.25 pace=1.3
+wave 52   drone s_curve x=660 count=8 spacing=0.25 pace=1.3 mirror
+ground 54 radar x=700
+ground 55 heavy_turret x=220
+
+# --- Airfield (60-110 s): a runway with parked fighters taking off ---
+wave 60   gunship hover_leave x=480
+ground 61 turret x=100
+ground 61 turret x=860
+wave 64   drone straight x=120 count=4 spacing=0.4 dx=60
+wave 64   drone straight x=840 count=4 spacing=0.4 dx=-60
+ground 66 bunker x=300
+ground 66 bunker x=660
+wave 70   fighter circle_strafe x=300 count=2 spacing=1.2
+wave 70   fighter circle_strafe x=660 count=2 spacing=1.2 mirror
+ground 72 heavy_turret x=480
+wave 75   kamikaze straight x=240 count=5 spacing=0.4 dx=120 variant=b1
+wave 75   drone dive_retreat x=200 count=4 spacing=0.5 dx=180 variant=b2
+ground 78 tank x=140
+ground 79 tank x=820 mirror
+wave 80   drone cross_screen x=-20 y=70 count=8 spacing=0.25
+wave 83   fighter dive_retreat x=360
+wave 84   fighter dive_retreat x=600 mirror
+ground 85 radar x=200
+ground 86 turret x=480
+wave 88   drone s_curve x=240 count=6 spacing=0.3
+wave 88   drone s_curve x=720 count=6 spacing=0.3 mirror
+ground 92 bunker x=480
+ground 93 turret x=280
+ground 93 turret x=680
+wave 95   gunship hover_leave x=300
+wave 97   gunship hover_leave x=660 mirror
+wave 102  kamikaze straight x=480 count=4 spacing=0.7
+ground 104 heavy_turret x=160
+ground 104 heavy_turret x=800
+
+# --- Mid-stage set piece (110-140 s): a tank convoy rolls through ---
+ground 110 tank x=420
+ground 111 tank x=420
+ground 112 tank x=420
+ground 113 tank x=420
+ground 114 tank x=420
+ground 112 turret x=200
+ground 112 turret x=760
+wave 112  drone cross_screen x=-20 y=100 count=6 spacing=0.3
+wave 116  drone cross_screen x=980 y=60 count=6 spacing=0.3 mirror
+wave 120  fighter dive_retreat x=240
+wave 120  fighter dive_retreat x=720 mirror
+ground 122 bunker x=180
+ground 122 bunker x=780
+wave 125  gunship hover_leave x=480
+ground 128 tank x=600 mirror
+ground 129 tank x=640 mirror
+wave 132  kamikaze straight x=160 count=6 spacing=0.4 dx=128
+ground 134 radar x=480
+
+# --- Inner base (140-200 s): denser turrets, everything at once ---
+wave 141  drone circle_strafe x=180 count=6 spacing=0.35 variant=c1
+wave 141  drone circle_strafe x=780 count=6 spacing=0.35 mirror variant=c1
+wave 141  fighter s_curve x=480 count=4 spacing=0.7 variant=c2
+wave 141  gunship hover_leave x=480 variant=c3
+ground 142 heavy_turret x=300
+ground 142 heavy_turret x=660
+ground 145 turret x=120
+ground 146 turret x=840
+wave 148  drone straight x=200 count=6 spacing=0.25 dx=112
+wave 152  fighter dive_retreat x=300
+wave 152  fighter dive_retreat x=660 mirror
+ground 154 bunker x=480
+ground 156 tank x=200
+ground 157 tank x=760 mirror
+wave 158  kamikaze straight x=300 count=4 spacing=0.5 dx=120
+wave 162  drone s_curve x=300 count=8 spacing=0.25 pace=1.3
+wave 162  drone s_curve x=660 count=8 spacing=0.25 pace=1.3 mirror
+ground 164 radar x=160
+ground 164 radar x=800
+ground 166 heavy_turret x=480
+wave 168  gunship hover_leave x=300
+wave 168  gunship hover_leave x=660 mirror
+wave 174  drone cross_screen x=-20 y=80 count=8 spacing=0.25
+wave 176  drone cross_screen x=980 y=130 count=8 spacing=0.25 mirror
+ground 178 turret x=240
+ground 178 turret x=480
+ground 178 turret x=720
+wave 182  fighter circle_strafe x=240 count=3 spacing=1.0
+wave 182  fighter circle_strafe x=720 count=3 spacing=1.0 mirror
+ground 186 bunker x=300
+ground 186 bunker x=660
+wave 190  kamikaze straight x=200 count=6 spacing=0.35 dx=112
+
+# --- Command center approach (200-240 s): last push before the boss (M4) ---
+ground 200 heavy_turret x=200
+ground 200 heavy_turret x=760
+wave 202  fighter dive_retreat x=200
+wave 202  fighter dive_retreat x=480
+wave 202  fighter dive_retreat x=760 mirror
+ground 205 radar x=480
+wave 208  gunship hover_leave x=480
+wave 210  drone s_curve x=240 count=6 spacing=0.3
+wave 210  drone s_curve x=720 count=6 spacing=0.3 mirror
+ground 212 bunker x=160
+ground 212 bunker x=800
+ground 214 turret x=360
+ground 214 turret x=600
+wave 218  kamikaze straight x=240 count=5 spacing=0.4 dx=120
+wave 222  drone circle_strafe x=300 count=6 spacing=0.35
+wave 222  drone circle_strafe x=660 count=6 spacing=0.35 mirror
+ground 224 heavy_turret x=480
+wave 228  fighter s_curve x=480 count=4 spacing=0.6
