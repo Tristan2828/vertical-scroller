@@ -32,6 +32,8 @@ signal killed(index: int, at: Vector2, by_peer: int)
 var play_area: Rect2 = Rect2(Vector2.ZERO, Vector2(ScreenFit.BASE))
 ## Host: damage dealt by each peer (run stats; the online smoke test checks it).
 var damage_by_peer: Dictionary[int, int] = {}
+## Host: guns fire this much more often (harder later stages: below 1).
+var fire_interval_scale: float = 1.0
 
 var _active: PackedByteArray = PackedByteArray()
 var _types: PackedInt32Array = PackedInt32Array()
@@ -59,6 +61,8 @@ var _next_fire: PackedFloat32Array = PackedFloat32Array()
 var _next_homing: PackedFloat32Array = PackedFloat32Array()
 ## Host: trackers that gave up following and are flying away.
 var _leaving: PackedByteArray = PackedByteArray()
+## Elite Wing modifier: tougher, faster-shooting, gold enemies.
+var _elite: PackedByteArray = PackedByteArray()
 ## Explosions: x, y, age.
 var _explosions: Array[Vector3] = []
 
@@ -84,23 +88,25 @@ func _init() -> void:
 	_next_fire.resize(CAPACITY)
 	_next_homing.resize(CAPACITY)
 	_leaving.resize(CAPACITY)
+	_elite.resize(CAPACITY)
 
 
 ## Host: adds an enemy that appears at `spawn_time` (may be in the future).
 ## `hp_scale` is the co-op HP scaling. Returns its pool index, or -1 if full.
 func spawn(type_id: int, shape: PathShapes.Id, spawn_time: float, origin: Vector2, mirror: bool = false,
-		pace: float = 1.0, hp_scale: float = 1.0) -> int:
+		pace: float = 1.0, hp_scale: float = 1.0, elite: bool = false) -> int:
 	for i: int in CAPACITY:
 		if _active[i] == 0:
-			spawn_at(i, type_id, shape, spawn_time, origin, mirror, pace)
-			_hp[i] = maxi(roundi(EnemyTypes.ALL[type_id].max_hp * hp_scale), 1)
+			spawn_at(i, type_id, shape, spawn_time, origin, mirror, pace, elite)
+			var scale := hp_scale * (StageModifiers.ELITE_HP if elite else 1.0)
+			_hp[i] = maxi(roundi(EnemyTypes.ALL[type_id].max_hp * scale), 1)
 			return i
 	return -1
 
 
 ## Puts an enemy in pool slot `index` (clients: the slot the host chose).
 func spawn_at(index: int, type_id: int, shape: PathShapes.Id, spawn_time: float, origin: Vector2, mirror: bool,
-		pace: float = 1.0) -> void:
+		pace: float = 1.0, elite: bool = false) -> void:
 	if index < 0 or index >= CAPACITY or not EnemyTypes.is_valid_id(type_id):
 		return
 	var type := EnemyTypes.ALL[type_id]
@@ -119,6 +125,7 @@ func spawn_at(index: int, type_id: int, shape: PathShapes.Id, spawn_time: float,
 	_next_fire[index] = spawn_time + type.first_shot_delay
 	_next_homing[index] = spawn_time + type.homing_delay
 	_leaving[index] = 0
+	_elite[index] = 1 if elite else 0
 
 
 ## From `time` on, enemy `index` flies straight from `origin` toward `target`.
@@ -164,6 +171,7 @@ func records(only: PackedInt32Array = PackedInt32Array()) -> Array:
 	var r_targets := PackedVector2Array()
 	var r_speeds := PackedFloat32Array()
 	var r_keep := PackedByteArray()
+	var elites := PackedByteArray()
 	for i: int in CAPACITY:
 		if _active[i] == 0 or (not only.is_empty() and not only.has(i)):
 			continue
@@ -179,12 +187,13 @@ func records(only: PackedInt32Array = PackedInt32Array()) -> Array:
 		r_targets.append(_redirect_targets[i])
 		r_speeds.append(_redirect_speeds[i])
 		r_keep.append(_redirect_keep_going[i])
-	return [indices, types, shapes, times, origins, mirrors, paces, r_times, r_origins, r_targets, r_speeds, r_keep]
+		elites.append(_elite[i])
+	return [indices, types, shapes, times, origins, mirrors, paces, r_times, r_origins, r_targets, r_speeds, r_keep, elites]
 
 
 ## Client: spawn records from the host (see records()).
 func apply_records(data: Array) -> void:
-	if data.size() != 12:
+	if data.size() != 13:
 		return
 	var indices: PackedInt32Array = data[0]
 	var types: PackedInt32Array = data[1]
@@ -198,14 +207,15 @@ func apply_records(data: Array) -> void:
 	var r_targets: PackedVector2Array = data[9]
 	var r_speeds: PackedFloat32Array = data[10]
 	var r_keep: PackedByteArray = data[11]
+	var elites: PackedByteArray = data[12]
 	var n := indices.size()
 	for array_size: int in [types.size(), shapes.size(), times.size(), origins.size(), mirrors.size(), paces.size(),
-			r_times.size(), r_origins.size(), r_targets.size(), r_speeds.size(), r_keep.size()]:
+			r_times.size(), r_origins.size(), r_targets.size(), r_speeds.size(), r_keep.size(), elites.size()]:
 		n = mini(n, array_size)
 	for i: int in n:
 		if shapes[i] < 0 or shapes[i] >= PathShapes.Id.size():
 			continue
-		spawn_at(indices[i], types[i], shapes[i] as PathShapes.Id, times[i], origins[i], mirrors[i] == 1, paces[i])
+		spawn_at(indices[i], types[i], shapes[i] as PathShapes.Id, times[i], origins[i], mirrors[i] == 1, paces[i], elites[i] == 1)
 		if r_times[i] >= 0.0:
 			redirect(indices[i], r_times[i], r_origins[i], r_targets[i], r_speeds[i], r_keep[i] == 1)
 
@@ -244,7 +254,7 @@ func take_ready_guns(stage_time: float) -> PackedInt32Array:
 		var type := EnemyTypes.ALL[_types[i]]
 		if type.shot_pattern < 0:
 			continue
-		_next_fire[i] = stage_time + type.fire_interval
+		_next_fire[i] = stage_time + type.fire_interval * fire_interval_scale * (StageModifiers.ELITE_FIRE_INTERVAL if _elite[i] == 1 else 1.0)
 		var y := _positions[i].y
 		if y >= FIRE_TOP and y <= FIRE_BOTTOM and play_area.has_point(_positions[i]):
 			ready.append(i)
@@ -278,6 +288,10 @@ func position_of(index: int) -> Vector2:
 
 func hp_of(index: int) -> int:
 	return _hp[index]
+
+
+func is_elite(index: int) -> bool:
+	return _elite[index] == 1
 
 
 func has_redirect(index: int) -> bool:
@@ -367,6 +381,7 @@ func _remove(index: int, by_peer: int) -> void:
 func _draw() -> void:
 	for i: int in CAPACITY:
 		if is_alive(i):
-			PixelArt.draw(self, EnemyTypes.ALL[_types[i]].sprite, _positions[i], Color.WHITE, _flash[i] > 0.0)
+			var tint := StageModifiers.ELITE_TINT if _elite[i] == 1 else Color.WHITE
+			PixelArt.draw(self, EnemyTypes.ALL[_types[i]].sprite, _positions[i], Color.WHITE, _flash[i] > 0.0, false, 1.0, tint)
 	for explosion: Vector3 in _explosions:
 		Explosions.draw(self, Vector2(explosion.x, explosion.y), explosion.z / EXPLOSION_SECONDS, 1.0)

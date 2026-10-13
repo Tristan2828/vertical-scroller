@@ -32,7 +32,6 @@ render_target_update_mode = 4
 process_mode = 1
 
 [node name="LevelSpawner" type="MultiplayerSpawner" parent="GameView/GameViewport"]
-_spawnable_scenes = PackedStringArray("res://src/stage/stage.tscn", "res://src/lobby/lobby.tscn")
 spawn_path = NodePath("../Level")
 spawn_limit = 1
 

@@ -91,19 +91,28 @@ var _hurt_flash_left: float = 0.0
 
 
 ## Called by the stage's spawn function, before the node enters the tree.
+## `run` is this player's part of the run (RunState.PlayerRun.to_dict()):
+## shop upgrades, power and HP carried over from the last stage.
 func setup(owner_peer_id: int, player_slot: int, ship: int, start: Vector2, area: Rect2,
-		special: int = Specials.Kind.MEGA_BOMB) -> void:
+		special: int = Specials.Kind.MEGA_BOMB, run: Dictionary = {}) -> void:
 	peer_id = owner_peer_id
 	slot = player_slot
 	ship_id = ship
 	bounds = area
 	name = str(owner_peer_id)
+	var carried := RunState.PlayerRun.from_dict(run)
 	# Each player gets its own copy so in-run changes only affect this ship.
 	stats = Ships.ALL[ship].duplicate() as ShipStats
+	stats.max_hp += carried.max_hp_bonus
+	stats.move_speed *= 1.0 + carried.speed_bonus
+	stats.focus_speed *= 1.0 + carried.speed_bonus
 	health.reset(stats.max_hp)
+	if carried.hp > 0:
+		health.hp = mini(carried.hp, stats.max_hp)
+	state.power = carried.power
 	special_kind = special if Specials.is_valid(special) else Specials.Kind.MEGA_BOMB
-	# Charges refill at the start of each stage.
-	special_charges = Specials.charges_of(special_kind)
+	# Charges refill at the start of each stage (plus any bought in the shop).
+	special_charges = Specials.charges_of(special_kind) + carried.extra_charges
 	state.position = start
 	position = start
 	_remote_target = start

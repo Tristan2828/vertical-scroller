@@ -10,6 +10,7 @@ func before_each() -> void:
 	RunSetup.order = []
 	RunSetup.ships = {}
 	RunSetup.specials = {}
+	RunState.current = RunState.new()
 	LaunchOptions.weak_bosses = false
 	LaunchOptions.invincible = false
 	LaunchOptions.start_at_seconds = 0.0
@@ -265,6 +266,72 @@ func test_the_whole_stage_plays_to_the_end() -> void:
 	_hunt(roundi((stage.def.length + 60.0 + Stage.END_SECONDS) / DELTA))
 	assert_eq(stage.phase, Stage.Phase.CLEAR)
 	assert_signal_emitted(stage, "finished")
+
+
+func test_ships_start_with_what_the_run_kept() -> void:
+	var player := RunState.current.player(1)
+	player.power = 3
+	player.hp = 40
+	player.extra_charges = 1
+	player.speed_bonus = 0.08
+	RunState.current.team_rapid_fire = 20.0
+	_make_stage()
+	var ship := stage.local_ship()
+	assert_eq(ship.state.power, 3)
+	assert_eq(ship.health.hp, 40)
+	assert_eq(ship.special_charges, Specials.charges_of(Specials.Kind.MEGA_BOMB) + 1)
+	assert_almost_eq(ship.stats.move_speed, Ships.ALL[0].move_speed * 1.08, 0.01)
+	assert_eq(ship.state.rapid_fire_left, 20.0)
+
+
+func test_clearing_a_stage_pays_out_and_moves_the_run_on() -> void:
+	LaunchOptions.start_at_seconds = 239.0
+	LaunchOptions.weak_bosses = true
+	LaunchOptions.invincible = true
+	_make_stage()
+	_hunt(60 * 60)
+	assert_eq(stage.phase, Stage.Phase.CLEAR)
+	var run := RunState.current
+	assert_eq(run.stages_done, 1)
+	assert_true(run.has_next_stage())
+	assert_true(run.result.is_empty(), "one more stage to go")
+	assert_gt(run.score, 0)
+	assert_gte(run.team_scrap, StageGoals.CHARGE_PAYOUT, "the unused Mega Bomb paid out")
+
+
+func test_game_over_ends_the_run() -> void:
+	_make_stage()
+	stage.credits = 0
+	stage.local_ship().take_hit(999)
+	_ticks(2)
+	assert_eq(RunState.current.result, "lost")
+
+
+func test_the_second_stage_is_harder() -> void:
+	RunState.current.stages_done = 1
+	_make_stage()
+	assert_gt(stage.difficulty, 1.0)
+	assert_gt(stage._hp_scale(), 1.0)
+	assert_lt(stage.enemies.fire_interval_scale, 1.0)
+
+
+func test_elite_wing_turns_one_wave_gold() -> void:
+	RunState.current.modifiers = [StageModifiers.Id.ELITE_WING, StageModifiers.Id.NONE]
+	_make_stage()
+	var elite_wave := stage._waves[stage._elite_wave]
+	LaunchOptions.invincible = true
+	_ticks(roundi(elite_wave.time / DELTA) + 2)
+	var elites := 0
+	for index: int in EnemyManager.CAPACITY:
+		if stage.enemies.is_elite(index):
+			elites += 1
+	assert_eq(elites, elite_wave.count)
+
+
+func test_armored_turrets_toughen_the_ground() -> void:
+	RunState.current.modifiers = [StageModifiers.Id.ARMORED_TURRETS, StageModifiers.Id.NONE]
+	_make_stage()
+	assert_almost_eq(stage._ground_hp_scale(), StageModifiers.ARMOR_HP, 0.001)
 
 
 func test_solo_has_no_hp_scaling() -> void:

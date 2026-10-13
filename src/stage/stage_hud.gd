@@ -4,8 +4,8 @@ extends CanvasLayer
 ## left); teammates' names in their ship colors with small HP bars (top right);
 ## kills, ground targets, the team's Scrap and respawn credits; a thin stage
 ## progress line that becomes the boss's HP bar; the auto-fire state; a center
-## banner (stage name, boss warning, shot down, stage clear, game over); and
-## (host, online) the invite. The real HUD layout for 1–4 players comes with
+## banner (stage name, boss warning, shot down, game over); the results panel
+## after a stage clear (goals, payout, score); and (host, online) the invite. The real HUD layout for 1–4 players comes with
 ## the art pass (M6).
 
 const HP_BAR: Rect2 = Rect2(8, 522, 140, 8)
@@ -19,6 +19,9 @@ const HP_LOW_COLOR: Color = Color(0.95, 0.35, 0.3)
 const PROGRESS_COLOR: Color = Color(0.6, 0.65, 0.8)
 const BOSS_COLOR: Color = Color(0.95, 0.3, 0.4)
 const BOOST_COLOR: Color = Color(1.0, 0.8, 0.4)
+const GOAL_MET_COLOR: Color = Color(0.55, 0.95, 0.5)
+const GOAL_MISSED_COLOR: Color = Color(0.55, 0.56, 0.62)
+const TITLE_COLOR: Color = Color(0.95, 0.78, 0.4)
 
 @onready var _left: Label = $Left
 @onready var _right: Label = $Right
@@ -38,6 +41,11 @@ var _my_hp_ratio: float = 1.0
 var _team: Array[Ship] = []
 var _progress: float = 0.0
 var _boss_ratio: float = -1.0
+var _results: PanelContainer = null
+var _results_lines: VBoxContainer = null
+var _results_footer: Label = null
+var _results_left: float = 0.0
+var _results_next: String = ""
 
 
 func _ready() -> void:
@@ -46,6 +54,7 @@ func _ready() -> void:
 	_bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bars.draw.connect(_draw_bars)
 	add_child(_bars)
+	_build_results()
 	Net.invite.changed.connect(_show_invite)
 	_show_invite()
 
@@ -54,6 +63,66 @@ func _process(delta: float) -> void:
 	if _banner_left > 0.0:
 		_banner_left -= delta
 		_banner.visible = _banner_left > 0.0
+	if _results.visible:
+		_results_left = maxf(_results_left - delta, 0.0)
+		_results_footer.text = "%s in %d s" % [_results_next, ceili(_results_left)]
+
+
+func _build_results() -> void:
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(center)
+	_results = PanelContainer.new()
+	_results.custom_minimum_size = Vector2(300, 0)
+	_results.hide()
+	center.add_child(_results)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 3)
+	_results.add_child(column)
+	_results_lines = VBoxContainer.new()
+	_results_lines.add_theme_constant_override("separation", 3)
+	column.add_child(_results_lines)
+	_results_footer = Label.new()
+	_results_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_results_footer.add_theme_color_override("font_color", GOAL_MISSED_COLOR)
+	column.add_child(_results_footer)
+
+
+## The stage clear panel: every goal (met or not) with its reward, the payout
+## for unused charges, and the score. `results` comes from Stage._finish_run_stage.
+func show_results(results: Dictionary, seconds: float) -> void:
+	_banner.visible = false
+	_banner_left = 0.0
+	for child: Node in _results_lines.get_children():
+		child.queue_free()
+	_results_line("Stage clear!", TITLE_COLOR, 18)
+	var met: Array = results.get("goals", [])
+	for goal: int in StageGoals.Id.size():
+		if goal == StageGoals.Id.TWIST and not met.has(goal):
+			continue  # Only stages with a twist have this goal.
+		var done := met.has(goal)
+		_results_line("%s %s   +%d Scrap" % ["[x]" if done else "[ ]", StageGoals.NAMES[goal], StageGoals.REWARDS[goal]],
+			GOAL_MET_COLOR if done else GOAL_MISSED_COLOR)
+	var charges := int(results.get("unused_charges", 0))
+	if charges > 0:
+		_results_line("Unused special charges: %d x %d   +%d Scrap" % [charges, StageGoals.CHARGE_PAYOUT,
+			charges * StageGoals.CHARGE_PAYOUT], BOOST_COLOR)
+	_results_line("Scrap from goals: +%d" % int(results.get("payout", 0)), TITLE_COLOR)
+	_results_line("Stage score %d   Run score %d" % [int(results.get("stage_score", 0)), int(results.get("run_score", 0))],
+		Color.WHITE)
+	_results_next = "Shop opens" if results.get("next", "") == "shop" else "Run summary"
+	_results_left = seconds
+	_results.show()
+
+
+func _results_line(text: String, color: Color, size: int = 9) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_font_size_override("font_size", size)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if size > 9 else HORIZONTAL_ALIGNMENT_LEFT
+	_results_lines.add_child(label)
 
 
 func show_banner(text: String, seconds: float) -> void:

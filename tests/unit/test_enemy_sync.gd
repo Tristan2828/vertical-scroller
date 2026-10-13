@@ -41,7 +41,7 @@ func test_records_keep_the_host_pool_index() -> void:
 
 func test_records_are_empty_with_no_enemies() -> void:
 	var data := host.records()
-	assert_eq(data.size(), 12)
+	assert_eq(data.size(), 13)
 	assert_eq((data[0] as PackedInt32Array).size(), 0)
 	client.apply_records(data)
 	assert_eq(client.active_count(), 0)

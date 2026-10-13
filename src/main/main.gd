@@ -1,9 +1,13 @@
 class_name Main
 extends Node
 ## Root scene. Shows the title menu, starts solo/host/join sessions, and owns
-## the `Level` slot. The host puts the lobby or the stage into that slot;
-## `LevelSpawner` (a MultiplayerSpawner) then recreates it automatically on every
-## client, including friends who join later. (Session flow from Medieval Survival.)
+## the `Level` slot. The host puts the lobby, a stage, the shop or the run
+## summary into that slot through `LevelSpawner` (a MultiplayerSpawner), which
+## recreates it on every client, including friends who join later. The spawn
+## data carries the run (RunState) so clients have it before the scene starts.
+## (Session flow from Medieval Survival.)
+##
+## A run: lobby -> stage -> shop -> stage ... -> run summary -> lobby.
 ##
 ## The whole game draws into GameViewport, a 960x540 SubViewport (an off-screen
 ## canvas). _fit_view() then puts that picture on screen, scaled to the window
@@ -15,15 +19,22 @@ extends Node
 
 const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
 const LOBBY_SCENE: PackedScene = preload("res://src/lobby/lobby.tscn")
+const SHOP_SCENE: PackedScene = preload("res://src/shop/shop.tscn")
+const SUMMARY_SCENE: PackedScene = preload("res://src/ui/run_summary.tscn")
+const SCENES: Dictionary[String, PackedScene] = {
+	"lobby": LOBBY_SCENE, "stage": STAGE_SCENE, "shop": SHOP_SCENE, "summary": SUMMARY_SCENE,
+}
 const SHARP_SHADER: Shader = preload("res://src/main/sharp_bilinear.gdshader")
 const SCREENSHOT_EVERY: float = 4.0
 const SCREENSHOT_COUNT: int = 3
 const SCALING_NAMES: Array[String] = ["sharp", "pixel"]
 
 var _sharp_material: ShaderMaterial = ShaderMaterial.new()
+var _run_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 @onready var _view: SubViewportContainer = $GameView
 @onready var _level: Node = $GameView/GameViewport/Level
+@onready var _level_spawner: MultiplayerSpawner = $GameView/GameViewport/LevelSpawner
 @onready var _menu: MainMenu = $GameView/GameViewport/MainMenu
 @onready var _pause_menu: PauseMenu = $GameView/GameViewport/PauseMenu
 
@@ -38,6 +49,9 @@ func _ready() -> void:
 			get_window().position = DisplayServer.screen_get_position(get_window().current_screen) + LaunchOptions.window_at
 		else:
 			get_window().move_to_center()
+	# Every peer needs the spawn function (clients run it when a spawn arrives).
+	_level_spawner.spawn_function = _spawn_level
+	_run_rng.randomize()
 	_sharp_material.shader = SHARP_SHADER
 	get_window().size_changed.connect(_fit_view)
 	Settings.changed.connect(_fit_view)
@@ -51,6 +65,7 @@ func _ready() -> void:
 	_pause_menu.leave_requested.connect(_leave_game.bind("You left the game."))
 	# Clients get the lobby / stage from LevelSpawner: hide the menu when it arrives.
 	_level.child_entered_tree.connect(func(node: Node) -> void:
+		_screenshot_scene(node)
 		_menu.hide()
 		_pause_menu.allowed = true
 		var lobby := node as Lobby
@@ -125,23 +140,50 @@ func _on_server_disconnected() -> void:
 	_leave_game("Disconnected from the host.")
 
 
-## Host: show the lobby (start of a session, and after every stage).
+## Every peer: makes the scene the host spawned. Clients take the run from the
+## spawn data first, so the scene can read it in _ready().
+func _spawn_level(data: Variant) -> Node:
+	var info: Dictionary = data
+	if not multiplayer.is_server():
+		RunState.current = RunState.from_dict(info.get("run", {}))
+	var scene: PackedScene = SCENES.get(str(info.get("kind", "lobby")), LOBBY_SCENE)
+	return scene.instantiate()
+
+
+## Host: swaps the Level slot to `kind`. Deferred callers only: never in the
+## middle of the old scene's own tick.
+func _load(kind: String) -> Node:
+	_clear_level()
+	return _level_spawner.spawn({"kind": kind, "run": RunState.current.to_dict()})
+
+
+## Host: show the lobby (start of a session, and after every run).
 func _load_lobby() -> void:
-	_clear_level()
-	var lobby: Lobby = LOBBY_SCENE.instantiate()
-	# Deferred: swap scenes after the current frame, never in the middle of one.
-	lobby.start_requested.connect(_load_stage, CONNECT_DEFERRED)
+	var lobby := _load("lobby") as Lobby
+	lobby.start_requested.connect(_start_run, CONNECT_DEFERRED)
 	lobby.leave_requested.connect(_leave_game.bind(""), CONNECT_DEFERRED)
-	_level.add_child(lobby)
 
 
-## Host: start the stage. LevelSpawner removes the lobby and creates the stage
-## on every client too. When it's over, everyone goes back to the lobby.
+## Host: the lobby's Start: a fresh run, then its first stage.
+func _start_run() -> void:
+	RunState.start(RunSetup.order, _run_rng)
+	_load_stage()
+
+
+## Host: the run's next stage. LevelSpawner removes the old scene and creates
+## the stage on every client too.
 func _load_stage() -> void:
-	_clear_level()
-	var stage: Stage = STAGE_SCENE.instantiate()
-	stage.finished.connect(_load_lobby, CONNECT_DEFERRED)
-	_level.add_child(stage)
+	var stage := _load("stage") as Stage
+	stage.finished.connect(_after_stage, CONNECT_DEFERRED)
+
+
+func _after_stage() -> void:
+	if RunState.current.is_over() or not RunState.current.has_next_stage():
+		var summary := _load("summary") as RunSummary
+		summary.finished.connect(_load_lobby, CONNECT_DEFERRED)
+	else:
+		var shop := _load("shop") as Shop
+		shop.finished.connect(_load_stage, CONNECT_DEFERRED)
 
 
 func _clear_level() -> void:
@@ -159,12 +201,9 @@ func _leave_game(message: String) -> void:
 
 
 func _report_and_quit() -> void:
-	var stage := _level.get_node_or_null("Stage") as Stage
-	var lobby := _level.get_node_or_null("Lobby") as Lobby
-	if stage != null:
-		print(stage.debug_report())
-	elif lobby != null:
-		print(lobby.debug_report())
+	var scene := _level.get_child(0) if _level.get_child_count() > 0 else null
+	if scene != null and scene.has_method("debug_report"):
+		print(scene.call("debug_report"))
 	else:
 		print("[report] peer %d: nothing loaded" % multiplayer.get_unique_id())
 	Net.leave_game()
@@ -180,6 +219,22 @@ static func save_screenshot(tree: SceneTree, file_name: String) -> void:
 	var path := LaunchOptions.screenshot_dir.path_join(file_name)
 	tree.root.get_texture().get_image().save_png(path)
 	print("Saved screenshot %s" % path)
+
+
+## --screenshot-dir: one picture of each shop and run summary (and the stage
+## results panel) a moment after it appears.
+func _screenshot_scene(node: Node) -> void:
+	if LaunchOptions.screenshot_dir.is_empty():
+		return
+	var role := "_client" if LaunchOptions.mode == LaunchOptions.Mode.JOIN else ""
+	var stage := node as Stage
+	if stage != null:
+		await stage.ended
+		await get_tree().create_timer(1.0, true).timeout
+		await save_screenshot(get_tree(), "results_%d%s.png" % [RunState.current.stages_done, role])
+	elif node is Shop or node is RunSummary:
+		await get_tree().create_timer(0.8, true).timeout
+		await save_screenshot(get_tree(), "%s_%d%s.png" % ["shop" if node is Shop else "summary", RunState.current.stages_done, role])
 
 
 ## --screenshot-dir: the title menu (no mode flag) or the lobby, then gameplay

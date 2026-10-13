@@ -42,7 +42,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Partial co-op HP scaling.
 - **Done when:** a full ~4 minute Planet Base stage (gray-box art) plays start to finish, solo and online; tests cover wave timing, variants and path determinism.
 
-## M4: Boss, specials, pickups, death — built 2026-10-12, waiting for the owner's playtest
+## M4: Boss, specials, pickups, death ✅ (built 2026-10-12; the owner's playtest is still to come)
 - Stage boss with an attack script (adapt `BossBrain` / `BossStep`), the scroll stopping for the boss, a boss HP bar.
 - Specials: **Mega Bomb** (1 charge) and **Shield** (3 charges); charges refill per stage.
 - Main gun power levels (1–5) from power orbs; 2 timed boosts (Rapid Fire, Wingmen).
@@ -50,7 +50,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Death → respawn after a delay from the **shared respawn credit pool**; run over when everyone is down with none left.
 - **Done when:** a stage can be won or lost solo and online; `--invincible` / `--weak-bosses` style flags speed up testing.
 
-## M5: Results, shop, loop
+## M5: Results, shop, loop — built 2026-10-12, waiting for the owner's playtest
 - Results screen: stage goals (70% kills, 100% kills, no damage, all ground structures, fast boss), score, Scrap earned, payout for unused charges, personal best.
 - Shop: random offers (4 personal + 1 team), **equal split of the team wallet + Chip in**, ready-up with the 60 s soft timer. Copy ideas from `ShopController` / `ShopSession`.
 - Stage modifiers: 2 to start (Armored Turrets, Elite Wing).

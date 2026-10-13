@@ -9,13 +9,20 @@
 #   - the host credited damage to the client's peer id (client input -> host sim works),
 #   - neither process logged a script error.
 #
-# Usage:  pwsh tools/net_smoke_test.ps1 [-Port 7810] [-Seconds 14]
+# -FullRun plays a whole run instead (every stage starts just before its boss,
+# weak bosses, invincible ships): stage -> results -> shop -> stage -> run
+# summary, and passes when both peers cleared every stage and reached the summary.
+#
+# Usage:  pwsh tools/net_smoke_test.ps1 [-Port 7810] [-Seconds 14] [-FullRun]
 # Set $env:GODOT to override the Godot console executable path.
 
 param(
 	[int]$Port = 7810,
-	[double]$Seconds = 14
+	[double]$Seconds = 14,
+	[switch]$FullRun
 )
+if ($FullRun -and $Seconds -lt 80) { $Seconds = 80 }
+$hostExtra = if ($FullRun) { @("--start-at=232", "--weak-bosses", "--invincible") } else { @() }
 
 $godot = if ($env:GODOT) { $env:GODOT } else { "C:\Code Tools\Godot\Godot_v4.7.2-stable_win64_console.exe" }
 $project = Split-Path -Parent $PSScriptRoot
@@ -32,7 +39,7 @@ function Start-Peer([string]$name, [string[]]$gameArgs) {
 # Refresh Godot's cache first: new `class_name` scripts aren't known until an import runs.
 & $godot --headless --path $project --import 2>&1 | Out-Null
 
-$hostProcess = Start-Peer "host" @("--host", "--port=$Port", "--local-only", "--autopilot", "--run-for=$($Seconds + 3)")
+$hostProcess = Start-Peer "host" (@("--host", "--port=$Port", "--local-only", "--autopilot", "--run-for=$($Seconds + 3)") + $hostExtra)
 Start-Sleep -Seconds 1
 $clientProcess = Start-Peer "client" @("--join=127.0.0.1", "--port=$Port", "--autopilot", "--run-for=$Seconds")
 # If a peer crashes before it can quit, don't wait forever.
@@ -51,10 +58,16 @@ Write-Output "===== HOST =====" $hostLog "===== CLIENT =====" $clientLog
 $failures = @()
 if ($timedOut) { $failures += "a process hung and was killed" }
 if ("$hostLog`n$clientLog" -match "SCRIPT ERROR|ERROR:") { $failures += "a process logged an error" }
-if ($clientLog -notmatch "\(client\).*ships: 2") { $failures += "client's stage didn't have 2 ships" }
+if ($FullRun) {
+	foreach ($log in @(@("host", $hostLog), @("client", $clientLog))) {
+		$clears = ([regex]::Matches($log[1], "ended: CLEAR")).Count
+		if ($clears -lt 2) { $failures += "$($log[0]) cleared $clears of 2 stages" }
+		if ($log[1] -notmatch "\[summary\] run won") { $failures += "$($log[0]) never reached the run summary" }
+	}
+} elseif ($clientLog -notmatch "\(client\).*ships: 2") { $failures += "client's stage didn't have 2 ships" }
 if ($clientLog -match "Connected as peer (\d+)") {
 	$clientId = $Matches[1]
-	if ($hostLog -notmatch "damage by peer: .*\b$($clientId): \d+") { $failures += "host saw no damage from client $clientId" }
+	if (-not $FullRun -and $hostLog -notmatch "damage by peer: .*\b$($clientId): \d+") { $failures += "host saw no damage from client $clientId" }
 } else {
 	$failures += "client never connected"
 }
@@ -63,4 +76,8 @@ if ($failures.Count -gt 0) {
 	Write-Host "FAILED: $($failures -join '; ')" -ForegroundColor Red
 	exit 1
 }
-Write-Host "OK: client $clientId connected, flew, and its shots damaged enemies on the host." -ForegroundColor Green
+if ($FullRun) {
+	Write-Host "OK: host and client $clientId played a whole run: 2 stages, the shop and the run summary." -ForegroundColor Green
+} else {
+	Write-Host "OK: client $clientId connected, flew, and its shots damaged enemies on the host." -ForegroundColor Green
+}

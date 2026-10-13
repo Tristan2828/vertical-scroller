@@ -21,9 +21,9 @@ const BOOSTS: Array[Kind] = [Kind.RAPID_FIRE, Kind.WINGMEN]
 
 
 ## Host: what a kill of `type` drops, as [kind, value, kind, value, ...].
-static func roll_drops(type: EnemyType, rng: RandomNumberGenerator) -> PackedInt32Array:
+static func roll_drops(type: EnemyType, rng: RandomNumberGenerator, scrap_scale: int = 1) -> PackedInt32Array:
 	var drops := PackedInt32Array()
-	var scrap := type.scrap
+	var scrap := type.scrap * scrap_scale
 	while scrap > 0:
 		var piece := mini(scrap, SCRAP_PIECE)
 		_add(drops, Kind.SCRAP, piece)

@@ -27,6 +27,8 @@ const LIGHT: Color = Color(0.85, 0.35, 0.3)
 var play_area: Rect2 = Rect2(Vector2.ZERO, Vector2(ScreenFit.BASE))
 ## Host: damage dealt by each peer.
 var damage_by_peer: Dictionary[int, int] = {}
+## Host: guns fire this much more often (harder later stages: below 1).
+var fire_interval_scale: float = 1.0
 
 var _defs: Array[StageDef.GroundDef] = []
 var _stage: StageDef = null
@@ -146,7 +148,7 @@ func take_ready_guns(stage_time: float) -> PackedInt32Array:
 		var type := EnemyTypes.ALL[_defs[i].type_id]
 		if type.shot_pattern < 0:
 			continue
-		_next_fire[i] = stage_time + type.fire_interval
+		_next_fire[i] = stage_time + type.fire_interval * fire_interval_scale
 		var y := _positions[i].y
 		if y >= FIRE_TOP and y <= FIRE_BOTTOM:
 			ready.append(i)
