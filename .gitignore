@@ -1,0 +1,21 @@
+# Godot 4
+.godot/
+.import/
+*.translation
+
+# Builds
+builds/
+*.exe
+*.pck
+
+# OS / editor
+Thumbs.db
+.DS_Store
+__MACOSX/
+.vscode/
+
+# Written by tools/build.ps1 for each exported build
+build_info.cfg
+
+# gamekit's asset page launcher (made by `gamekit.py ui --launcher`; points at a path on this PC)
+Start Gamekit.bat
