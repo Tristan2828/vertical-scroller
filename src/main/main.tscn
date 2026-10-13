@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/main/main.gd" id="1_main"]
-[ext_resource type="PackedScene" path="res://src/stage/stage.tscn" id="2_stage"]
+[ext_resource type="Script" path="res://src/ui/main_menu.gd" id="2_menu"]
 [ext_resource type="PackedScene" path="res://src/ui/pause_menu.tscn" id="3_pause"]
 
 [node name="Main" type="Node"]
@@ -28,6 +28,15 @@ canvas_item_default_texture_filter = 0
 size = Vector2i(960, 540)
 render_target_update_mode = 4
 
-[node name="Stage" parent="GameView/GameViewport" instance=ExtResource("2_stage")]
+[node name="Level" type="Node" parent="GameView/GameViewport"]
+process_mode = 1
+
+[node name="LevelSpawner" type="MultiplayerSpawner" parent="GameView/GameViewport"]
+_spawnable_scenes = PackedStringArray("res://src/stage/stage.tscn", "res://src/lobby/lobby.tscn")
+spawn_path = NodePath("../Level")
+spawn_limit = 1
+
+[node name="MainMenu" type="CanvasLayer" parent="GameView/GameViewport"]
+script = ExtResource("2_menu")
 
 [node name="PauseMenu" parent="GameView/GameViewport" instance=ExtResource("3_pause")]

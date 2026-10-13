@@ -17,6 +17,8 @@ var scaling_mode: ScreenFit.Mode = ScreenFit.Mode.SHARP
 var fire_mode: FireControl.Mode = FireControl.Mode.ALWAYS
 ## The ship glides toward the mouse cursor; right click focus, left click special.
 var mouse_mode: bool = false
+## Name shown to the other players (title menu).
+var player_name: String = ""
 
 
 func _enter_tree() -> void:
@@ -40,6 +42,7 @@ func load_settings() -> void:
 	scaling_mode = clampi(config.get_value("video", "scaling_mode", scaling_mode), 0, ScreenFit.Mode.size() - 1) as ScreenFit.Mode
 	fire_mode = clampi(config.get_value("controls", "fire_mode", fire_mode), 0, FireControl.Mode.size() - 1) as FireControl.Mode
 	mouse_mode = config.get_value("controls", "mouse_mode", mouse_mode)
+	player_name = str(config.get_value("player", "name", player_name))
 
 
 func save() -> void:
@@ -51,6 +54,7 @@ func save() -> void:
 	config.set_value("video", "scaling_mode", scaling_mode)
 	config.set_value("controls", "fire_mode", fire_mode)
 	config.set_value("controls", "mouse_mode", mouse_mode)
+	config.set_value("player", "name", player_name)
 	config.save(PATH)
 
 

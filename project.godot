@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 
 GameInput="*res://src/autoload/game_input.gd"
 Settings="*res://src/autoload/settings.gd"
+Net="*res://src/autoload/net.gd"
 
 [debug]
 

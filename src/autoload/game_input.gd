@@ -21,6 +21,8 @@ func _enter_tree() -> void:
 	# Auto-fire Toggle: press to switch firing on/off. Hold: fires while held.
 	_add_action("fire", [_key(KEY_F), _key(KEY_C), _joy(JOY_BUTTON_Y)])
 	_add_action("pause", [_key(KEY_ESCAPE), _joy(JOY_BUTTON_START)])
+	# Host: copy the invite address again.
+	_add_action("copy_invite", [_key(KEY_F1)])
 	# Mouse mode only (LocalInput ignores these otherwise).
 	_add_action("mouse_focus", [_mouse(MOUSE_BUTTON_RIGHT)])
 	_add_action("mouse_special", [_mouse(MOUSE_BUTTON_LEFT)])

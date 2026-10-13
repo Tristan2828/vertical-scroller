@@ -5,24 +5,24 @@ extends RefCounted
 ## mouse mode are applied here, on the player's own computer, so the host only
 ## ever sees "move this way, focus, fire".
 
-## True while a menu is open: the ship stands still.
+## True while a menu is open: the ship stands still (and Always auto-fire keeps going).
 static var blocked: bool = false
 
 ## Auto-fire Toggle mode: firing on/off (starts on).
 var toggle_on: bool = true
-var _seq: int = 0
+## Autopilot: shifts the weaving path, so co-op autopilots don't fly on top of each other.
+var autopilot_phase: float = 0.0
 var _autopilot_time: float = 0.0
 
 
-## `mouse_position` is the cursor in stage coordinates.
+## `mouse_position` is the cursor in stage coordinates. The caller sets `seq`.
 func sample(ship: ShipState, stats: ShipStats, mouse_position: Vector2, delta: float) -> ShipInput:
 	var input := ShipInput.new()
-	_seq += 1
-	input.seq = _seq
 	if LaunchOptions.autopilot:
 		_autopilot(input, ship, stats, delta)
 		return input
 	if blocked:
+		input.fire = FireControl.wants_fire(Settings.fire_mode, toggle_on, false, false)
 		return input
 	var mouse := Settings.mouse_mode
 	input.focus = Input.is_action_pressed("focus") or (mouse and Input.is_action_pressed("mouse_focus"))
@@ -40,7 +40,7 @@ func sample(ship: ShipState, stats: ShipStats, mouse_position: Vector2, delta: f
 ## Test mode (`--autopilot`): weave across the lower screen, focusing now and then.
 func _autopilot(input: ShipInput, ship: ShipState, stats: ShipStats, delta: float) -> void:
 	_autopilot_time += delta
-	var t := _autopilot_time
+	var t := _autopilot_time + autopilot_phase
 	input.focus = fmod(t, 8.0) > 5.0
 	var target := Vector2(480.0 + 320.0 * sin(t * 0.6), 400.0 + 70.0 * sin(t * 1.3))
 	input.move = ShipMotor.glide_move(ship.position, target, ShipMotor.speed_of(stats, input.focus), delta)

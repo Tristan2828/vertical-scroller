@@ -154,6 +154,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **2026-10-12:** M0 done: Godot 4.7.2 project at 960x540, GUT tests, build script, `CLAUDE.md`; local git repo only. Next: M1 (feel test).
 - **2026-10-12:** M1 built: placeholder ship ("Striker": 3-stream spread, focus = 2 tight parallel streams), auto-fire Always / Toggle / Hold, mouse mode, Sharp / Pixel-perfect scaling, scrolling test ground, looping S-curve test wave. Ship and gun numbers are first guesses for the owner to tune by feel.
 - **2026-10-12:** owner's feel test of M1: "it feels great". The Striker's numbers stay as they are. Next: M2 (online co-op foundation).
+- **2026-10-12:** M2 built: title menu (name, solo, host, join) -> lobby (ready-up, ship placeholder) -> stage for 1–4 players, drop-in mid-stage. The host sends only enemy spawn records, kills, shot events and small ship snapshots; enemies and scroll come from the shared stage clock. Player colors: Blue, Purple, Green, Gold (Medieval Survival's red would look like the red enemies). Headless smoke test and a two-window run on one PC pass.
 
 ## 8. Decisions log (why)
 - **Pixel art over hi-res 2D or low-poly 3D:** it reuses the owner's gamekit pipeline, Claude can draw and edit it, and asset packs mix well under one palette. 3D (with Kenney/Quaternius CC0 kits) was the closest look to Sky Force, but it's the biggest effort and a second engine to learn.

@@ -24,7 +24,7 @@ grow_vertical = 2
 
 [node name="Box" type="VBoxContainer" parent="Center"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 theme_override_constants/separation = 6
 
@@ -32,6 +32,12 @@ theme_override_constants/separation = 6
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Paused"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Center/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.72, 0.8, 1)
 horizontal_alignment = 1
 
 [node name="ResumeButton" type="Button" parent="Center/Box"]
@@ -43,6 +49,11 @@ text = "Resume"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Settings"
+
+[node name="LeaveButton" type="Button" parent="Center/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Leave game"
 
 [node name="QuitButton" type="Button" parent="Center/Box"]
 unique_name_in_owner = true

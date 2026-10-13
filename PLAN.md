@@ -25,7 +25,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - One test wave of enemies on a named path shape (S-curve) that die when shot.
 - **Done when:** the ship feels good to fly and shoot on keyboard, gamepad and mouse; screenshots at 1080p and 1440p look right in both scaling modes; unit tests cover the motor, fire modes and path shapes.
 
-## M2: Online co-op foundation
+## M2: Online co-op foundation — built 2026-10-12, waiting for the owner's two-window check
 - Copy and trim `Net` (ENet, UPnP, invites, names), the lobby (ship pick placeholder, ready-up), `ClientPredictor`, the launch flags (`--solo/--host/--join`, `--autopilot`, `--local-only`, `--screenshot-dir`, `--run-for`) and `net_smoke_test.ps1`.
 - A fixed tick order in the stage node; clients send input and the host simulates.
 - **Shared stage clock:** scroll and scripted enemy positions are computed on every peer from stage time; the host sends spawns, damage/deaths and pattern events; own ship predicted.

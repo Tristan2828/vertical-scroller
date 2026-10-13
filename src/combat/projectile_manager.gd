@@ -121,7 +121,9 @@ func resolve_hits(enemies: EnemyManager, apply_damage: bool) -> void:
 			continue
 		hit_at.emit(position_of(i))
 		if apply_damage:
-			enemies.damage(enemy, _damages[i])
+			enemies.damage(enemy, _damages[i], _owners[i])
+		else:
+			enemies.flash(enemy)
 		if _pierce[i] > 0:
 			_pierce[i] -= 1
 			_last_hit[i] = enemy
