@@ -6,7 +6,7 @@
 - The owner is new to Godot and game dev; AI writes most of the code. Explain engine concepts briefly when introducing them, prefer simple, readable solutions, and give a comparison table when the owner has to make a choice.
 - Target: Windows PC only. Input: keyboard, gamepad and mouse, all first-class.
 - **Code comes from Medieval Survival** (`C:\Repos\GameTest`, its own `CLAUDE.md` describes it): proven parts are copied in **when a milestone first needs them**, trimmed to fit, and covered by tests. No shared library. Read the original before copying, and don't copy features this game doesn't need.
-- Current state: M1 (feel test) built: solo ship, auto-fire modes + focus, mouse mode, Sharp / Pixel-perfect scaling, a scrolling test background and a looping S-curve test wave; waiting for the owner's feel playtest. Next: M2 (online co-op foundation). No GitHub repo yet: **ask the owner before creating one or pushing anything** (planned for M6).
+- Current state: M1 (feel test) built: solo ship, auto-fire modes + focus, mouse mode, Sharp / Pixel-perfect scaling, a scrolling test background and a looping S-curve test wave; the owner's feel test passed ("it feels great"). Next: M2 (online co-op foundation). No GitHub repo yet: **ask the owner before creating one or pushing anything** (planned for M6).
 
 ## Engine & language rules
 - **Godot 4.x only.** Never use Godot 3 syntax or APIs (e.g. use `@export`, `@onready`, `super()`, `CharacterBody2D`, `velocity` property + `move_and_slide()` with no args, `signal.connect(callable)`, `@rpc`, `FileAccess`, `Tween` via `create_tween()`).

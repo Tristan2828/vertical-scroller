@@ -16,7 +16,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Folder layout by feature: `src/autoload`, `src/main`, `src/stage`, `src/player`, `src/enemies`, `src/combat`, `src/progression`, `src/ui`, `src/art`, `src/audio`, `tests/unit`, `tools`.
 - **Done when:** the project opens headless, an empty main scene runs, and `run_tests.ps1` passes one sample test.
 
-## M1: Feel test (solo, built co-op-ready) — built 2026-10-12, waiting for the owner's feel playtest
+## M1: Feel test (solo, built co-op-ready) ✅ (done 2026-10-12; the owner's feel test: "it feels great")
 - **Screen scaling:** Sharp (fractional + sharp-bilinear shader) and Pixel-perfect (integer + borders), switched in Settings.
 - Copy and trim `GameInput` (bindings in code; keyboard default + classic alt, gamepad, mouse mode), `Settings`, `PixelFont`.
 - Pure `ShipMotor` (movement, focus speed, screen bounds, mouse glide) and `ShipStats` data (`ships/*.tres`).
