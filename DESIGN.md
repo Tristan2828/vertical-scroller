@@ -152,6 +152,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 ## 7. History and status
 - **2026-10-12:** planning Q&A held; this document written. No code yet. Next: `PLAN.md` milestone M0.
 - **2026-10-12:** M0 done: Godot 4.7.2 project at 960x540, GUT tests, build script, `CLAUDE.md`; local git repo only. Next: M1 (feel test).
+- **2026-10-12:** M1 built: placeholder ship ("Striker": 3-stream spread, focus = 2 tight parallel streams), auto-fire Always / Toggle / Hold, mouse mode, Sharp / Pixel-perfect scaling, scrolling test ground, looping S-curve test wave. Ship and gun numbers are first guesses for the owner to tune by feel.
 
 ## 8. Decisions log (why)
 - **Pixel art over hi-res 2D or low-poly 3D:** it reuses the owner's gamekit pipeline, Claude can draw and edit it, and asset packs mix well under one palette. 3D (with Kenney/Quaternius CC0 kits) was the closest look to Sky Force, but it's the biggest effort and a second engine to learn.

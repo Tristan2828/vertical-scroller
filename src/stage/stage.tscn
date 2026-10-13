@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/stage/stage.gd" id="1_stage"]
+[ext_resource type="Script" path="res://src/stage/scroll_background.gd" id="2_background"]
+[ext_resource type="Script" path="res://src/enemies/enemy_manager.gd" id="3_enemies"]
+[ext_resource type="Script" path="res://src/combat/projectile_manager.gd" id="4_bullets"]
+[ext_resource type="Script" path="res://src/player/ship.gd" id="5_ship"]
+[ext_resource type="PackedScene" path="res://src/stage/stage_hud.tscn" id="6_hud"]
+
+[node name="Stage" type="Node2D"]
+process_mode = 1
+script = ExtResource("1_stage")
+
+[node name="Background" type="Node2D" parent="."]
+script = ExtResource("2_background")
+
+[node name="Enemies" type="Node2D" parent="."]
+script = ExtResource("3_enemies")
+
+[node name="PlayerBullets" type="Node2D" parent="."]
+script = ExtResource("4_bullets")
+hit_radius = 2.0
+bolt_size = Vector2i(3, 9)
+glow_color = Color(0.35, 0.85, 1, 0.75)
+core_color = Color(0.92, 1, 1, 1)
+
+[node name="Ship" type="Node2D" parent="."]
+script = ExtResource("5_ship")
+
+[node name="Hud" parent="." instance=ExtResource("6_hud")]

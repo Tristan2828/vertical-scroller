@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/settings_panel.gd" id="1_settings"]
+
+[node name="SettingsPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(240, 0)
+script = ExtResource("1_settings")
+
+[node name="Box" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Box"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Settings"
+horizontal_alignment = 1
+
+[node name="ScalingButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scaling"
+
+[node name="ScalingHint" type="Label" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.72, 0.8, 1)
+horizontal_alignment = 1
+
+[node name="FireButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Auto-fire"
+
+[node name="MouseButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Mouse mode"
+
+[node name="FullscreenButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="BackButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Back"

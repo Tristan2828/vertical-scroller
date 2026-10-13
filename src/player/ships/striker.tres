@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ShipStats" format=3]
+
+[ext_resource type="Script" path="res://src/player/ship_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Striker"
+sprite = "ship"
+max_hp = 100
+move_speed = 240.0
+focus_speed = 110.0
+hitbox_radius = 2.5
+body_radius = 10.0
+gun_pattern = 0
+focus_pattern = 1
+fire_interval = 0.1
+focus_fire_interval = 0.0667
+bullet_speed = 600.0
+bullet_damage = 6
+focus_bullet_damage = 9
+muzzle_offset = Vector2(0, -12)
