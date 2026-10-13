@@ -15,6 +15,7 @@ extends RefCounted
 ##   --start-at=<seconds>         host starts the stage clock here (test later parts of a stage)
 ##   --weak-bosses                bosses have 2% HP (test the stage ending quickly)
 ##   --invincible                 hits still land and count, but HP refills at once
+##   --perf-log                   every second: fps, worst frame, step timings, memory, objects
 ##   --screenshot-dir=<folder>    save PNGs: title menu, lobby, gameplay, pause menu, settings
 ##                                (needs a real window, not --headless)
 ##   --window=<width>x<height>    windowed at this size (ignores the fullscreen setting)
@@ -70,6 +71,8 @@ static func parse(args: PackedStringArray) -> void:
 			weak_bosses = true
 		elif arg == "--invincible":
 			invincible = true
+		elif arg == "--perf-log":
+			PerfLog.enabled = true
 		elif arg.begins_with("--screenshot-dir="):
 			screenshot_dir = arg.trim_prefix("--screenshot-dir=")
 		elif arg.begins_with("--window="):

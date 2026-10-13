@@ -171,6 +171,26 @@ func _enter_tree() -> void:
 	LocalInput.autopilot_aim = _autopilot_aim_x
 
 
+## --perf-log: frame timing every frame, a report line every second.
+var _perf_seconds: float = 0.0
+
+
+func _process(delta: float) -> void:
+	if not PerfLog.enabled:
+		return
+	PerfLog.frame()
+	_perf_seconds += delta
+	if _perf_seconds >= 1.0:
+		var extra := "t=%.0fs  bullets %d+%d  enemies %d  pickups %d  objects %d  nodes %d  draws %d  mem %.0f MB  video %.0f MB" % [
+			stage_time, player_bullets.count(), enemy_bullets.count(), enemies.active_count(), pickups.count(),
+			Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+			Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
+			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0]
+		print(PerfLog.report(_perf_seconds, extra))
+		_perf_seconds = 0.0
+
+
 func _exit_tree() -> void:
 	LocalInput.autopilot_aim = Callable()
 
@@ -202,8 +222,11 @@ func tick(delta: float) -> void:
 	_tick += 1
 	stage_time += delta
 	var all_ships := ships()
+	var t := PerfLog.start()
 	for ship: Ship in all_ships:
 		ship.tick(delta)
+	PerfLog.stop(&"ships", t)
+	t = PerfLog.start()
 	if is_host and phase == Phase.PLAYING:
 		_spawn_due_waves()
 		if def.has_boss() and stage_time >= def.length and _next_wave >= _waves.size():
@@ -211,19 +234,27 @@ func tick(delta: float) -> void:
 	enemies.tick(stage_time, delta)
 	ground.tick(stage_time, delta, _ship_positions(all_ships), _ground_hp_scale())
 	pickups.tick(stage_time, delta, _collectors(all_ships), is_host)
+	PerfLog.stop(&"enemies", t)
+	t = PerfLog.start()
 	if is_host:
 		_steer_homing()
 		_fire_guns()
 		_tick_boss(delta)
 		_apply_contact(all_ships)
 		_tick_respawns(all_ships, delta)
+	PerfLog.stop(&"host", t)
+	t = PerfLog.start()
 	player_bullets.step(delta)
 	player_bullets.resolve_hits(enemies, ground, is_host)
 	enemy_bullets.step(delta)
 	_apply_shields(all_ships)
 	enemy_bullets.resolve_ship_hits(all_ships, is_host)
+	PerfLog.stop(&"bullets", t)
+	t = PerfLog.start()
 	background.scroll = def.scroll_distance(stage_time)
 	hud.show_state(self, local_ship())
+	PerfLog.stop(&"hud", t)
+	t = PerfLog.start()
 	if is_host:
 		var peers := _ready_peer_list()
 		_flush_patterns()
@@ -231,6 +262,7 @@ func tick(delta: float) -> void:
 		if _tick % SNAPSHOT_INTERVAL_TICKS == 0:
 			_send_snapshot()
 		_check_end(all_ships, delta)
+	PerfLog.stop(&"network", t)
 
 
 func ships() -> Array[Ship]:
