@@ -167,6 +167,35 @@ func _physics_process(delta: float) -> void:
 	tick(delta)
 
 
+func _enter_tree() -> void:
+	LocalInput.autopilot_aim = _autopilot_aim_x
+
+
+func _exit_tree() -> void:
+	LocalInput.autopilot_aim = Callable()
+
+
+## Autopilot (tests, videos): the lowest air enemy above the ship, else the
+## nearest standing ground target ahead of it; NAN if there's nothing.
+func _autopilot_aim_x(from: Vector2) -> float:
+	var best_y := -INF
+	var best_x := NAN
+	for index: int in enemies.alive_indices():
+		var at := enemies.position_of(index)
+		if at.y < from.y - 40.0 and at.y > best_y and play_area.has_point(at):
+			best_y = at.y
+			best_x = at.x
+	if not is_nan(best_x):
+		return best_x
+	var nearest := INF
+	for index: int in ground.count():
+		var at := ground.position_of(index)
+		if ground.is_alive(index) and at.y > 0.0 and at.y < from.y and absf(at.x - from.x) < nearest:
+			nearest = absf(at.x - from.x)
+			best_x = at.x
+	return best_x
+
+
 ## One simulation step, in a fixed order.
 func tick(delta: float) -> void:
 	var is_host := multiplayer.is_server()

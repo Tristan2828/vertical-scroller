@@ -10,6 +10,10 @@ static var blocked: bool = false
 
 const AUTOPILOT_SPECIAL_EVERY: float = 20.0
 
+## Autopilot: given the ship's position, the x to line up under (a target), or
+## NAN for none. The stage sets this; tests and menus leave it empty.
+static var autopilot_aim: Callable = Callable()
+
 ## Auto-fire Toggle mode: firing on/off (starts on).
 var toggle_on: bool = true
 ## Special button presses so far (ShipInput.special_count).
@@ -56,5 +60,10 @@ func _autopilot(input: ShipInput, ship: ShipState, stats: ShipStats, delta: floa
 	var t := _autopilot_time + autopilot_phase
 	input.focus = fmod(t, 8.0) > 5.0
 	var target := Vector2(480.0 + 320.0 * sin(t * 0.6), 400.0 + 70.0 * sin(t * 1.3))
+	if autopilot_aim.is_valid():
+		# Line up under a target, still weaving a little so it dodges some.
+		var aim_x: float = autopilot_aim.call(ship.position)
+		if not is_nan(aim_x):
+			target.x = aim_x + 18.0 * sin(t * 2.3)
 	input.move = ShipMotor.glide_move(ship.position, target, ShipMotor.speed_of(stats, input.focus), delta)
 	input.fire = true
