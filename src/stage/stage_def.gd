@@ -9,6 +9,8 @@ extends RefCounted
 ##   scroll_speed = 60     pixels per second (60 = 1 px per tick, the smoothest)
 ##   wave <time> <enemy> <shape> [x=480] [y=-16] [count=1] [spacing=0.4] [dx=0] [pace=1] [mirror] [variant=a1]
 ##   ground <time> <type> x=<x> [mirror]
+##   boss <type> [x=480]
+##   boss_step <phase 1|2> <pattern> [aim=nearest|each|fixed|spin] [angle=90] [wait=1] [dx=0] [dy=0]
 ##
 ## wave: `count` enemies of type <enemy> (EnemyType.key) fly path <shape>
 ## (PathShapes.NAMES), one every `spacing` seconds from `time`, starting at
@@ -18,6 +20,12 @@ extends RefCounted
 ## ground: a ground object of <type> that scrolls in at the top of the screen at
 ## `time`, at x. Its index among the ground lines is its network id, so ground
 ## objects need no spawn messages.
+## boss: when the waves are over (`length`), the scroll stops and this boss
+## flies in. Its attack script is the boss_step lines: phase 1 loops until it
+## drops below half HP, then phase 2 loops (phase 1 again if there's none).
+## A step fires <pattern> (ShotPatterns.NAMES) from the boss (+dx, dy), aimed
+## at the nearest ship, at each ship, at a fixed angle (degrees: 90 = down),
+## or spinning further each time, then waits `wait` seconds.
 
 ## Every peer reads the same file, so these ids match everywhere.
 class WaveDef:
@@ -51,6 +59,11 @@ var scroll_speed: float = 60.0
 var waves: Array[WaveDef] = []
 ## In file order; the index is the ground object's id.
 var grounds: Array[GroundDef] = []
+## The boss (EnemyTypes id, -1 = none), where it comes in, and its script.
+var boss_type: int = -1
+var boss_x: float = 480.0
+var boss_steps_one: Array[BossStep] = []
+var boss_steps_two: Array[BossStep] = []
 ## "line 12: unknown enemy 'dron'" (empty when the file is fine).
 var errors: PackedStringArray = PackedStringArray()
 
@@ -72,7 +85,7 @@ static func parse(text: String) -> StageDef:
 			continue
 		if line.contains("="):
 			var first_word := line.get_slice(" ", 0)
-			if first_word != "wave" and first_word != "ground":
+			if not first_word in ["wave", "ground", "boss", "boss_step"]:
 				def._parse_setting(number, line)
 				continue
 		var words := line.split(" ", false)
@@ -81,9 +94,22 @@ static func parse(text: String) -> StageDef:
 				def._parse_wave(number, words)
 			"ground":
 				def._parse_ground(number, words)
+			"boss":
+				def._parse_boss(number, words)
+			"boss_step":
+				def._parse_boss_step(number, words)
 			_:
 				def.errors.append("line %d: don't know '%s'" % [number, words[0]])
 	return def
+
+
+func has_boss() -> bool:
+	return boss_type >= 0
+
+
+## How far the map has scrolled at `stage_time`: it stops when the boss comes.
+func scroll_distance(stage_time: float) -> float:
+	return scroll_speed * (minf(stage_time, length) if has_boss() else stage_time)
 
 
 ## The waves one run flies: every line without a variant, plus one option per
@@ -143,7 +169,7 @@ func _parse_wave(number: int, words: PackedStringArray) -> void:
 	var wave := WaveDef.new()
 	wave.time = _number(number, "time", words[1])
 	wave.type_id = EnemyTypes.from_key(words[2])
-	if wave.type_id < 0 or EnemyTypes.ALL[wave.type_id].ground:
+	if wave.type_id < 0 or EnemyTypes.ALL[wave.type_id].ground or EnemyTypes.ALL[wave.type_id].is_boss:
 		errors.append("line %d: unknown air enemy '%s'" % [number, words[2]])
 		return
 	wave.shape = PathShapes.from_name(words[3])
@@ -203,6 +229,61 @@ func _parse_ground(number: int, words: PackedStringArray) -> void:
 	if not has_x:
 		errors.append("line %d: a ground object needs x=" % number)
 	grounds.append(ground)
+
+
+func _parse_boss(number: int, words: PackedStringArray) -> void:
+	if words.size() < 2:
+		errors.append("line %d: a boss line needs a boss type" % number)
+		return
+	var type_id := EnemyTypes.from_key(words[1])
+	if type_id < 0 or not EnemyTypes.ALL[type_id].is_boss:
+		errors.append("line %d: unknown boss '%s'" % [number, words[1]])
+		return
+	boss_type = type_id
+	for i: int in range(2, words.size()):
+		if words[i].begins_with("x="):
+			boss_x = _number(number, "x", words[i].trim_prefix("x="))
+		else:
+			errors.append("line %d: unknown boss option '%s'" % [number, words[i]])
+
+
+func _parse_boss_step(number: int, words: PackedStringArray) -> void:
+	if words.size() < 3:
+		errors.append("line %d: a boss_step needs a phase (1 or 2) and a pattern" % number)
+		return
+	var step := BossStep.new()
+	var phase := words[1]
+	if phase != "1" and phase != "2":
+		errors.append("line %d: the boss_step phase is 1 or 2, not '%s'" % [number, phase])
+		return
+	step.pattern = ShotPatterns.from_name(words[2])
+	if step.pattern < 0 or ShotPatterns.is_ship_pattern(step.pattern):
+		errors.append("line %d: unknown enemy pattern '%s'" % [number, words[2]])
+		return
+	for i: int in range(3, words.size()):
+		var key := words[i].get_slice("=", 0)
+		var value := words[i].get_slice("=", 1)
+		match key:
+			"aim":
+				var aim := BossStep.AIM_NAMES.find(value)
+				if aim < 0:
+					errors.append("line %d: aim is one of %s, not '%s'" % [number, ", ".join(BossStep.AIM_NAMES), value])
+				else:
+					step.aim = aim as BossStep.Aim
+			"angle":
+				step.angle = deg_to_rad(_number(number, key, value))
+			"wait":
+				step.wait = maxf(_number(number, key, value), 0.05)
+			"dx":
+				step.offset.x = _number(number, key, value)
+			"dy":
+				step.offset.y = _number(number, key, value)
+			_:
+				errors.append("line %d: unknown boss_step option '%s'" % [number, words[i]])
+	if phase == "1":
+		boss_steps_one.append(step)
+	else:
+		boss_steps_two.append(step)
 
 
 func _number(number: int, key: String, value: String) -> float:

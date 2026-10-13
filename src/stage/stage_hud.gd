@@ -1,19 +1,24 @@
 class_name StageHud
 extends CanvasLayer
-## M3's gray-box HUD: your HP bar (bottom left), teammates' names in their ship
-## colors with small HP bars (top right), kills and ground targets, a thin
-## stage progress line, the auto-fire state, a center banner (stage name, stage
-## clear) and (host, online) the invite. The real HUD layout for 1–4 players
-## comes with the art pass (M6).
+## Gray-box HUD: your HP bar, power level, special charges and boosts (bottom
+## left); teammates' names in their ship colors with small HP bars (top right);
+## kills, ground targets, the team's Scrap and respawn credits; a thin stage
+## progress line that becomes the boss's HP bar; the auto-fire state; a center
+## banner (stage name, boss warning, shot down, stage clear, game over); and
+## (host, online) the invite. The real HUD layout for 1–4 players comes with
+## the art pass (M6).
 
 const HP_BAR: Rect2 = Rect2(8, 522, 140, 8)
 const TEAM_BAR_SIZE: Vector2 = Vector2(60, 3)
 const PROGRESS_BAR: Rect2 = Rect2(330, 4, 300, 2)
+const BOSS_BAR: Rect2 = Rect2(230, 18, 500, 6)
 const BAR_BACK: Color = Color(0.05, 0.05, 0.08, 0.85)
 const BAR_EMPTY: Color = Color(0.25, 0.1, 0.12)
 const HP_COLOR: Color = Color(0.45, 0.9, 0.5)
 const HP_LOW_COLOR: Color = Color(0.95, 0.35, 0.3)
 const PROGRESS_COLOR: Color = Color(0.6, 0.65, 0.8)
+const BOSS_COLOR: Color = Color(0.95, 0.3, 0.4)
+const BOOST_COLOR: Color = Color(1.0, 0.8, 0.4)
 
 @onready var _left: Label = $Left
 @onready var _right: Label = $Right
@@ -21,6 +26,8 @@ const PROGRESS_COLOR: Color = Color(0.6, 0.65, 0.8)
 @onready var _invite: Label = $Invite
 @onready var _banner: Label = $Banner
 @onready var _hp_label: Label = $HpLabel
+@onready var _loadout: Label = $Loadout
+@onready var _boss_label: Label = $BossLabel
 
 ## Names and slots last shown, so the player list is only rebuilt when it changes.
 var _players_signature: String = ""
@@ -30,6 +37,7 @@ var _bars: Control = null
 var _my_hp_ratio: float = 1.0
 var _team: Array[Ship] = []
 var _progress: float = 0.0
+var _boss_ratio: float = -1.0
 
 
 func _ready() -> void:
@@ -59,22 +67,35 @@ func show_state(stage: Stage, me: Ship) -> void:
 	var left := "Auto-fire: %s" % FireControl.MODE_NAMES[fire_mode]
 	if fire_mode != FireControl.Mode.ALWAYS and me != null:
 		left += " (%s)" % ("firing" if me.firing else "off")
-	if _left.text != left:
-		_left.text = left
-	var right := "Kills: %d   Ground: %d/%d" % [stage.kills, stage.ground_kills, stage.ground.count()]
-	if _right.text != right:
-		_right.text = right
+	_set_text(_left, left)
+	_set_text(_right, "Kills: %d   Ground: %d/%d   Scrap: %d   Ships left: %d" % [
+		stage.kills, stage.ground_kills, stage.ground.count(), stage.team_scrap, stage.credits])
 	if me != null:
 		_my_hp_ratio = me.health.ratio()
 		var hp_text := "HP %d/%d" % [me.health.hp, me.health.max_hp]
-		if me.health.is_empty():
-			hp_text += "  (no death until M4)"
-		if _hp_label.text != hp_text:
-			_hp_label.text = hp_text
+		if me.is_down():
+			hp_text = "DOWN - back in %.0f s" % ceilf(me.respawn_left) if me.respawn_left > 0.0 else "DOWN - no ships left: watching"
+		_set_text(_hp_label, hp_text)
+		var loadout := "Power %d/%d   %s x%d" % [me.state.power, ShipMotor.MAX_POWER, Specials.NAMES[me.special_kind], me.special_charges]
+		if me.state.rapid_fire_left > 0.0:
+			loadout += "   Rapid Fire %.0f" % ceilf(me.state.rapid_fire_left)
+		if me.state.wingmen_left > 0.0:
+			loadout += "   Wingmen %.0f" % ceilf(me.state.wingmen_left)
+		_set_text(_loadout, loadout)
 	_progress = stage.progress()
+	var in_boss := stage.phase == Stage.Phase.BOSS
+	_boss_ratio = stage.boss_hp_ratio if in_boss else -1.0
+	_boss_label.visible = in_boss
+	if in_boss:
+		_set_text(_boss_label, stage.boss_name())
 	_team = stage.ships()
 	_show_players(_team)
 	_bars.queue_redraw()
+
+
+static func _set_text(label: Label, text: String) -> void:
+	if label.text != text:
+		label.text = text
 
 
 func _show_players(ships: Array[Ship]) -> void:
@@ -100,7 +121,10 @@ func _show_players(ships: Array[Ship]) -> void:
 
 func _draw_bars() -> void:
 	_bar(HP_BAR, _my_hp_ratio, HP_LOW_COLOR if _my_hp_ratio < 0.3 else HP_COLOR)
-	_bar(PROGRESS_BAR, _progress, PROGRESS_COLOR)
+	if _boss_ratio >= 0.0:
+		_bar(BOSS_BAR, _boss_ratio, BOSS_COLOR)
+	else:
+		_bar(PROGRESS_BAR, _progress, PROGRESS_COLOR)
 	if _team.size() > 1:
 		# Under each name in the player list (rows are 14 px tall).
 		for i: int in _team.size():

@@ -1,25 +1,27 @@
 class_name Stage
 extends Node2D
-## One stage being played, solo or online (DESIGN.md §3). The stage's waves and
-## ground objects come from its `.stage` file (StageDef).
+## One stage being played, solo or online (DESIGN.md §3). The stage's waves,
+## ground objects and boss come from its `.stage` file (StageDef).
 ##
 ## Stage time is the shared clock (DESIGN.md §2 Networking): the scroll, every
 ## scripted enemy and every ground object position are computed from it on
-## every peer. The host owns the game: it spawns waves, aims and fires enemy
-## guns, steers homing enemies, applies all damage, and sends only events
-## (enemy spawn records, redirects, kills, ground destructions, shot patterns)
-## and small ship snapshots. Gameplay runs in tick(), in a fixed order; child
-## nodes never run gameplay on their own.
+## every peer. The host owns the game: it spawns waves and the boss, aims and
+## fires enemy guns, steers homing enemies, applies all damage, rolls drops,
+## runs specials and respawns, and sends only events (enemy spawn records,
+## redirects, kills, ground destructions, shot patterns, drops, specials) and
+## small snapshots. Gameplay runs in tick(), in a fixed order; child nodes
+## never run gameplay on their own.
 
-## Host: the stage is over (back to the lobby until M4/M5 add the boss, results and shop).
+## Host: the stage is over, won or lost (back to the lobby until M5 adds results and the shop).
 signal finished
 
-enum Phase { PLAYING, CLEAR }
+## Sent over the network: only add new phases at the end.
+enum Phase { PLAYING, CLEAR, BOSS, GAME_OVER }
 
 ## Extra enemy / ground HP per player beyond the first (DESIGN.md §5: partial scaling, draft).
 const HP_PER_EXTRA_PLAYER: float = 0.6
 const SHIP_START_Y: float = 460.0
-## Ships start side by side, by slot.
+## Ships start (and respawn) side by side, by slot.
 const SHIP_START_X: Array[float] = [420.0, 540.0, 300.0, 660.0]
 const BULLET_LIFETIME: float = 1.5
 const ENEMY_BULLET_LIFETIME: float = 6.0
@@ -38,8 +40,16 @@ const TRACKER_SECONDS: float = 5.5
 const TRACKER_LEAVE_SPEED: float = 90.0
 ## Collisions count from a little outside the hitbox (ships are bigger than it).
 const CONTACT_SLACK: float = 3.0
-## Seconds the "stage clear" banner shows before the host moves on.
-const CLEAR_SECONDS: float = 6.0
+## Seconds the "stage clear" / "game over" banner shows before the host moves on.
+const END_SECONDS: float = 6.0
+## The team's shared respawn credits for the run (DESIGN.md §5, draft).
+const START_CREDITS: int = 3
+## Where the boss appears (it flies down from there).
+const BOSS_START_Y: float = -40.0
+## --weak-bosses: share of the boss's HP.
+const WEAK_BOSS_HP: float = 0.02
+## The Mega Bomb's expanding ring.
+const MEGA_BOMB_COLOR: Color = Color(1.0, 0.95, 0.75)
 
 ## Which stage (Stages.PATHS index).
 var stage_index: int = 0
@@ -49,13 +59,24 @@ var stage_time: float = 0.0
 var phase: Phase = Phase.PLAYING
 var kills: int = 0
 var ground_kills: int = 0
+## The team's wallet (DESIGN.md §4: shared) and respawn credits.
+var team_scrap: int = 0
+var credits: int = START_CREDITS
+## 0..1 (host: from the boss's HP; clients: from snapshots). 1 before the boss.
+var boss_hp_ratio: float = 1.0
 
 ## Host: this run's waves (variants picked), sorted by time, and the next one due.
 var _waves: Array[StageDef.WaveDef] = []
 var _next_wave: int = 0
 var _tick: int = 0
-var _clear_left: float = 0.0
+var _end_left: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## Host: the boss's pool index and script.
+var _boss_index: int = -1
+var _boss_max_hp: int = 1
+var _boss_brain: BossBrain = null
+## Host: SPIN steps' current angles.
+var _spin_angles: Dictionary[BossStep, float] = {}
 ## Host: peers whose stage has loaded (only they get messages).
 var _ready_peers: Dictionary[int, bool] = {}
 ## Host: enemy patterns fired this tick, sent together.
@@ -68,6 +89,8 @@ var _pattern_times: PackedFloat32Array = PackedFloat32Array()
 @onready var background: ScrollBackground = $Background
 @onready var ground: GroundManager = $Ground
 @onready var enemies: EnemyManager = $Enemies
+@onready var effects: EffectsLayer = $Effects
+@onready var pickups: PickupManager = $Pickups
 @onready var player_bullets: ProjectileManager = $PlayerBullets
 @onready var enemy_bullets: ProjectileManager = $EnemyBullets
 @onready var ships_node: Node2D = $Ships
@@ -90,9 +113,11 @@ func _ready() -> void:
 	ground.play_area = play_area
 	ground.setup(def)
 	ground.destroyed.connect(_on_ground_destroyed)
+	pickups.play_area = play_area
+	_rng.randomize()
 	hud.show_banner(def.name, 2.5)
 	if multiplayer.is_server():
-		_rng.randomize()
+		pickups.collected.connect(_on_pickup_collected)
 		_waves = def.waves_for_seed(_rng.randi())
 		stage_time = LaunchOptions.start_at_seconds
 		while _next_wave < _waves.size() and _waves[_next_wave].time < stage_time:
@@ -124,23 +149,31 @@ func tick(delta: float) -> void:
 		ship.tick(delta)
 	if is_host and phase == Phase.PLAYING:
 		_spawn_due_waves()
+		if def.has_boss() and stage_time >= def.length and _next_wave >= _waves.size():
+			_start_boss()
 	enemies.tick(stage_time, delta)
 	ground.tick(stage_time, delta, _ship_positions(all_ships), _hp_scale())
+	pickups.tick(stage_time, delta, _collectors(all_ships), is_host)
 	if is_host:
 		_steer_homing()
 		_fire_guns()
+		_tick_boss(delta)
 		_apply_contact(all_ships)
+		_tick_respawns(all_ships, delta)
 	player_bullets.step(delta)
 	player_bullets.resolve_hits(enemies, ground, is_host)
 	enemy_bullets.step(delta)
+	_apply_shields(all_ships)
 	enemy_bullets.resolve_ship_hits(all_ships, is_host)
-	background.scroll = stage_time * def.scroll_speed
+	background.scroll = def.scroll_distance(stage_time)
 	hud.show_state(self, local_ship())
 	if is_host:
+		var peers := _ready_peer_list()
 		_flush_patterns()
+		pickups.flush_events(peers)
 		if _tick % SNAPSHOT_INTERVAL_TICKS == 0:
 			_send_snapshot()
-		_check_end(delta)
+		_check_end(all_ships, delta)
 
 
 func ships() -> Array[Ship]:
@@ -165,6 +198,10 @@ func progress() -> float:
 	return clampf(stage_time / maxf(def.length, 1.0), 0.0, 1.0)
 
 
+func boss_name() -> String:
+	return EnemyTypes.ALL[def.boss_type].display_name if def.has_boss() else ""
+
+
 ## Text summary for headless smoke tests (--run-for).
 func debug_report() -> String:
 	var lines := PackedStringArray()
@@ -172,9 +209,11 @@ func debug_report() -> String:
 	lines.append("[report] peer %d (%s)  %s  stage time %.1fs  phase %s  ships: %d  kills: %d  ground: %d/%d  enemies: %d  bullets: %d / enemy %d" % [
 		multiplayer.get_unique_id(), role, def.name, stage_time, Phase.keys()[phase], ships().size(), kills,
 		ground_kills, ground.count(), enemies.active_count(), player_bullets.count(), enemy_bullets.count()])
+	lines.append("[report]   scrap %d  credits %d  boss hp %.0f%%  pickups on screen %d" % [team_scrap, credits, boss_hp_ratio * 100.0, pickups.count()])
 	for ship: Ship in ships():
-		var line := "[report]   ship %d (%s) slot %d at %s  hp %d/%d" % [ship.peer_id, ship.display_name(), ship.slot,
-			ship.state.position.round(), ship.health.hp, ship.health.max_hp]
+		var line := "[report]   ship %d (%s) slot %d at %s  hp %d/%d  power %d  %s x%d%s" % [ship.peer_id, ship.display_name(),
+			ship.slot, ship.state.position.round(), ship.health.hp, ship.health.max_hp, ship.state.power,
+			Specials.NAMES[ship.special_kind], ship.special_charges, "  DOWN" if ship.is_down() else ""]
 		if ship.is_local() and not multiplayer.is_server():
 			line += "  corrections=%d largest=%.2fpx" % [ship.correction_count, ship.largest_correction]
 		lines.append(line)
@@ -189,11 +228,27 @@ func _hp_scale() -> float:
 	return 1.0 + HP_PER_EXTRA_PLAYER * maxi(ships().size() - 1, 0)
 
 
+func _ready_peer_list() -> Array[int]:
+	var peers: Array[int] = []
+	peers.assign(_ready_peers.keys())
+	return peers
+
+
+## Positions of the ships still flying (enemies aim at these).
 static func _ship_positions(list: Array[Ship]) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for ship: Ship in list:
-		points.append(ship.state.position)
+		if not ship.is_down():
+			points.append(ship.state.position)
 	return points
+
+
+static func _collectors(list: Array[Ship]) -> Dictionary[int, Vector2]:
+	var map: Dictionary[int, Vector2] = {}
+	for ship: Ship in list:
+		if not ship.is_down():
+			map[ship.peer_id] = ship.state.position
+	return map
 
 
 # --- Ships -------------------------------------------------------------------
@@ -202,7 +257,8 @@ static func _ship_positions(list: Array[Ship]) -> PackedVector2Array:
 func _add_ship(peer_id: int) -> void:
 	if ship_of(peer_id) != null:
 		return
-	_ship_spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "ship": RunSetup.ship_for(peer_id)})
+	_ship_spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "ship": RunSetup.ship_for(peer_id),
+		"special": RunSetup.special_for(peer_id)})
 
 
 func _remove_ship(peer_id: int) -> void:
@@ -219,9 +275,18 @@ func _spawn_ship(data: Variant) -> Node:
 	if ship_id < 0 or ship_id >= Ships.ALL.size():
 		ship_id = 0
 	var ship := Ship.new()
-	ship.setup(int(info["peer_id"]), slot, ship_id, Vector2(SHIP_START_X[slot], SHIP_START_Y), play_area)
+	ship.setup(int(info["peer_id"]), slot, ship_id, _start_of(slot), play_area, int(info.get("special", 0)))
 	ship.fired.connect(_on_ship_fired)
+	ship.special_requested.connect(_use_special)
+	ship.downed.connect(func(downed: Ship) -> void:
+		effects.blast(downed.state.position, 2.5)
+		if downed.is_local():
+			hud.show_banner("Shot down!", 1.5))
 	return ship
+
+
+static func _start_of(slot: int) -> Vector2:
+	return Vector2(SHIP_START_X[slot], SHIP_START_Y)
 
 
 func _free_slot() -> int:
@@ -239,6 +304,22 @@ func _lobby_rank(peer_id: int) -> int:
 	return index if index >= 0 else 1000 + peer_id
 
 
+## Host: downed ships come back after a delay while the team has credits.
+func _tick_respawns(list: Array[Ship], delta: float) -> void:
+	if phase == Phase.CLEAR or phase == Phase.GAME_OVER:
+		return
+	for ship: Ship in list:
+		if not ship.is_down() or ship.respawn_left <= 0.0:
+			continue
+		ship.respawn_left = maxf(ship.respawn_left - delta, 0.0)
+		if ship.respawn_left > 0.0:
+			continue
+		if credits > 0:
+			credits -= 1
+			ship.respawn(_start_of(ship.slot))
+		# Out of credits: it stays down (spectating) until the next stage.
+
+
 # --- Player shots ------------------------------------------------------------
 
 ## Runs on the host for every ship's shot, and on a client for its own
@@ -248,26 +329,78 @@ func _on_ship_fired(ship: Ship, seq: int, focus: bool) -> void:
 	var pattern := stats.focus_pattern if focus else stats.gun_pattern
 	var origin := ship.state.position + stats.muzzle_offset
 	var seed_value := ShotPatterns.make_seed(ship.peer_id, seq)
-	_spawn_shot(ship.peer_id, pattern, origin, seed_value, focus, 0.0)
+	var power := ship.state.power
+	var wingmen := ship.state.wingmen_left > 0.0
+	_spawn_shot(ship.peer_id, pattern, origin, seed_value, focus, power, wingmen, 0.0)
 	if multiplayer.is_server():
 		for peer_id: int in _ready_peers:
 			# The shooter already predicted this shot itself.
 			if peer_id != ship.peer_id:
-				_receive_shot.rpc_id(peer_id, ship.peer_id, pattern, origin, seed_value, focus, stage_time)
+				_receive_shot.rpc_id(peer_id, ship.peer_id, pattern, origin, seed_value, focus, power, wingmen, stage_time)
 
 
-func _spawn_shot(shooter_id: int, pattern: int, origin: Vector2, seed_value: int, focus: bool, start_age: float) -> void:
+func _spawn_shot(shooter_id: int, pattern: int, origin: Vector2, seed_value: int, focus: bool, power: int,
+		wingmen: bool, start_age: float) -> void:
 	var shooter := ship_of(shooter_id)
 	var stats := shooter.stats if shooter != null else Ships.ALL[0]
-	var damage := stats.focus_bullet_damage if focus else stats.bullet_damage
-	var bullets := ShotPatterns.build(pattern as ShotPatterns.Id, -PI / 2.0, seed_value, 1, stats.bullet_speed)
+	var damage := ShipMotor.damage(stats, power, focus)
+	var streams := ShipMotor.streams(stats, power, focus)
+	var bullets := ShotPatterns.build(pattern as ShotPatterns.Id, -PI / 2.0, seed_value, streams, stats.bullet_speed)
 	for i: int in range(0, bullets.size(), ShotPatterns.STRIDE):
 		var velocity := Vector2.from_angle(bullets[i]) * bullets[i + 1]
 		var offset := Vector2(bullets[i + 3], bullets[i + 4])
 		player_bullets.spawn(origin + offset, velocity, damage, BULLET_LIFETIME, shooter_id, 0, start_age - bullets[i + 2])
+	if wingmen:
+		var up := Vector2(0.0, -stats.bullet_speed)
+		for side: float in [-1.0, 1.0]:
+			var drone := origin - stats.muzzle_offset + Vector2(side * Ship.WINGMAN_OFFSET.x, Ship.WINGMAN_OFFSET.y - 4.0)
+			player_bullets.spawn(drone, up, damage, BULLET_LIFETIME, shooter_id, 0, start_age)
 
 
-# --- Host: waves, guns, homing, collisions -------------------------------------
+# --- Specials ------------------------------------------------------------------
+
+## Host: a ship pressed its special button.
+func _use_special(ship: Ship) -> void:
+	if ship.special_charges <= 0 or ship.is_down() or phase == Phase.CLEAR or phase == Phase.GAME_OVER:
+		return
+	ship.special_charges -= 1
+	match ship.special_kind:
+		Specials.Kind.MEGA_BOMB:
+			for index: int in enemies.alive_indices():
+				if play_area.has_point(enemies.position_of(index)):
+					enemies.damage(index, Specials.BOMB_DAMAGE, ship.peer_id)
+			for index: int in ground.count():
+				if ground.is_alive(index) and play_area.has_point(ground.position_of(index)):
+					ground.damage(index, Specials.BOMB_DAMAGE, ship.peer_id)
+			ship.health.invulnerable_left = maxf(ship.health.invulnerable_left, Specials.BOMB_SAFE_SECONDS)
+		Specials.Kind.SHIELD:
+			ship.state.shield_left = Specials.SHIELD_SECONDS
+	_show_special(ship.peer_id, ship.special_kind, ship.state.position)
+	for peer_id: int in _ready_peers:
+		_receive_special.rpc_id(peer_id, ship.peer_id, ship.special_kind, ship.state.position)
+
+
+## Every peer: what a special looks like (and the Mega Bomb's bullet clear).
+func _show_special(peer_id: int, kind: int, at: Vector2) -> void:
+	match kind:
+		Specials.Kind.MEGA_BOMB:
+			enemy_bullets.clear()
+			effects.ring(at, 620.0, MEGA_BOMB_COLOR)
+			effects.blast(at, 3.0)
+		Specials.Kind.SHIELD:
+			var ship := ship_of(peer_id)
+			if ship != null:
+				ship.state.shield_left = Specials.SHIELD_SECONDS
+
+
+## Every peer: enemy bullets touching a shield vanish.
+func _apply_shields(list: Array[Ship]) -> void:
+	for ship: Ship in list:
+		if ship.state.shield_left > 0.0 and not ship.is_down():
+			enemy_bullets.clear_near(ship.state.position, Specials.SHIELD_RADIUS)
+
+
+# --- Host: waves, guns, homing, collisions, drops -------------------------------
 
 func _spawn_due_waves() -> void:
 	while _next_wave < _waves.size() and _waves[_next_wave].time <= stage_time:
@@ -280,20 +413,25 @@ func _spawn_due_waves() -> void:
 				wave.mirror, wave.pace, _hp_scale())
 			if index >= 0:
 				indices.append(index)
-		if not indices.is_empty() and not _ready_peers.is_empty():
-			var data := enemies.records(indices)
-			for peer_id: int in _ready_peers:
-				_receive_enemies.rpc_id(peer_id, indices.size(), data)
+		_send_enemies(indices)
 
 
-## Aims at the nearest ship (straight down if there are none).
+func _send_enemies(indices: PackedInt32Array) -> void:
+	if indices.is_empty() or _ready_peers.is_empty():
+		return
+	var data := enemies.records(indices)
+	for peer_id: int in _ready_peers:
+		_receive_enemies.rpc_id(peer_id, indices.size(), data)
+
+
+## Aims at the nearest ship still flying (straight down if there are none).
 func _aim_from(origin: Vector2) -> float:
 	var target := GroundManager.nearest(origin, _ship_positions(ships()))
 	return (target - origin).angle() if target.is_finite() else PI / 2.0
 
 
 func _fire_guns() -> void:
-	if phase != Phase.PLAYING:
+	if phase == Phase.CLEAR or phase == Phase.GAME_OVER:
 		return
 	for index: int in enemies.take_ready_guns(stage_time):
 		var type := enemies.type_of(index)
@@ -383,44 +521,155 @@ func _apply_contact(list: Array[Ship]) -> void:
 				break
 
 
-func _on_enemy_killed(index: int, _at: Vector2, _by_peer: int) -> void:
+func _on_enemy_killed(index: int, at: Vector2, _by_peer: int) -> void:
 	kills += 1
-	if multiplayer.is_server():
-		for peer_id: int in _ready_peers:
-			_receive_kill.rpc_id(peer_id, index)
+	if not multiplayer.is_server():
+		return
+	_drop(enemies.type_of(index), at)
+	for peer_id: int in _ready_peers:
+		_receive_kill.rpc_id(peer_id, index)
+	if index == _boss_index:
+		_on_boss_defeated(at)
 
 
-func _on_ground_destroyed(index: int, _at: Vector2, _by_peer: int) -> void:
+func _on_ground_destroyed(index: int, at: Vector2, _by_peer: int) -> void:
 	ground_kills += 1
-	if multiplayer.is_server():
-		for peer_id: int in _ready_peers:
-			_receive_ground_destroyed.rpc_id(peer_id, index)
+	if not multiplayer.is_server():
+		return
+	_drop(ground.type_of(index), at)
+	for peer_id: int in _ready_peers:
+		_receive_ground_destroyed.rpc_id(peer_id, index)
 
 
-## Host: once the waves are over and the sky is empty, the stage is clear.
-func _check_end(delta: float) -> void:
-	if phase == Phase.PLAYING:
-		if stage_time >= def.length and enemies.active_count() == 0 and _next_wave >= _waves.size():
-			phase = Phase.CLEAR
-			_clear_left = CLEAR_SECONDS
-			_show_clear()
-			for peer_id: int in _ready_peers:
-				_receive_clear.rpc_id(peer_id, kills, ground_kills)
-	elif phase == Phase.CLEAR:
-		_clear_left -= delta
-		if _clear_left <= 0.0:
+## Host: what a wreck leaves behind.
+func _drop(type: EnemyType, at: Vector2) -> void:
+	var drops := Pickups.roll_drops(type, _rng)
+	for i: int in range(0, drops.size(), 2):
+		pickups.spawn_host(drops[i], drops[i + 1], at, stage_time)
+
+
+## Host: someone touched a pickup.
+func _on_pickup_collected(kind: int, value: int, peer_id: int) -> void:
+	var ship := ship_of(peer_id)
+	match kind:
+		Pickups.Kind.SCRAP:
+			team_scrap += value
+		Pickups.Kind.POWER_ORB:
+			if ship != null and ship.state.power < ShipMotor.MAX_POWER:
+				ship.state.power += 1
+			else:
+				team_scrap += Pickups.MAX_POWER_SCRAP
+		Pickups.Kind.RAPID_FIRE:
+			if ship != null:
+				ship.state.rapid_fire_left = Pickups.BOOST_SECONDS
+		Pickups.Kind.WINGMEN:
+			if ship != null:
+				ship.state.wingmen_left = Pickups.BOOST_SECONDS
+		Pickups.Kind.SPECIAL_CHARGE:
+			if ship != null:
+				ship.special_charges += 1
+
+
+# --- Host: boss -------------------------------------------------------------------
+
+## The waves are over: the scroll stops (StageDef.scroll_distance) and the boss flies in.
+func _start_boss() -> void:
+	phase = Phase.BOSS
+	var hp_scale := _hp_scale() * (WEAK_BOSS_HP if LaunchOptions.weak_bosses else 1.0)
+	_boss_index = enemies.spawn(def.boss_type, PathShapes.Id.BOSS, stage_time, Vector2(def.boss_x, BOSS_START_Y),
+		false, 1.0, hp_scale)
+	_boss_max_hp = maxi(enemies.hp_of(_boss_index), 1) if _boss_index >= 0 else 1
+	_boss_brain = BossBrain.new(def.boss_steps_one, def.boss_steps_two)
+	_show_boss_warning()
+	if _boss_index >= 0:
+		_send_enemies(PackedInt32Array([_boss_index]))
+
+
+func _show_boss_warning() -> void:
+	hud.show_banner("WARNING\n%s" % boss_name(), 3.0)
+
+
+func _tick_boss(delta: float) -> void:
+	if phase != Phase.BOSS or _boss_index < 0 or not enemies.is_alive(_boss_index):
+		return
+	boss_hp_ratio = clampf(float(enemies.hp_of(_boss_index)) / _boss_max_hp, 0.0, 1.0)
+	var step := _boss_brain.tick(delta, boss_hp_ratio)
+	if step == null:
+		return
+	var origin := enemies.position_of(_boss_index) + step.offset
+	var damage := enemies.type_of(_boss_index).bullet_damage
+	match step.aim:
+		BossStep.Aim.FIXED:
+			_fire_pattern(step.pattern, origin, step.angle, damage)
+		BossStep.Aim.AT_NEAREST:
+			_fire_pattern(step.pattern, origin, _aim_from(origin), damage)
+		BossStep.Aim.AT_EACH:
+			for target: Vector2 in _ship_positions(ships()):
+				_fire_pattern(step.pattern, origin, (target - origin).angle(), damage)
+		BossStep.Aim.SPIN:
+			var angle: float = _spin_angles.get(step, step.angle)
+			_spin_angles[step] = angle + BossStep.SPIN_STEP
+			_fire_pattern(step.pattern, origin, angle, damage)
+
+
+func _on_boss_defeated(at: Vector2) -> void:
+	boss_hp_ratio = 0.0
+	effects.chain(at, Vector2(30, 16), 10, _rng)
+	enemy_bullets.clear()
+	_end(Phase.CLEAR)
+
+
+# --- End of the stage ---------------------------------------------------------------
+
+## Host: the stage is won (boss down; or, without a boss, the waves are over and
+## the sky is empty) or lost (everyone down and no credits left).
+func _check_end(list: Array[Ship], delta: float) -> void:
+	if phase == Phase.PLAYING or phase == Phase.BOSS:
+		if not list.is_empty() and credits <= 0 and list.all(func(ship: Ship) -> bool: return ship.is_down()):
+			_end(Phase.GAME_OVER)
+		elif phase == Phase.PLAYING and not def.has_boss() and stage_time >= def.length \
+				and enemies.active_count() == 0 and _next_wave >= _waves.size():
+			_end(Phase.CLEAR)
+	else:
+		_end_left -= delta
+		if _end_left <= 0.0:
 			set_physics_process(false)
 			finished.emit()
 
 
-func _show_clear() -> void:
-	phase = Phase.CLEAR
+func _end(result: Phase) -> void:
+	phase = result
+	_end_left = END_SECONDS
+	_show_end(result)
+	for peer_id: int in _ready_peers:
+		_receive_end.rpc_id(peer_id, result, kills, ground_kills, team_scrap)
+
+
+func _show_end(result: Phase) -> void:
+	phase = result
+	print("[stage] %s ended: %s at %.1fs, %d kills, %d Scrap" % [def.name, Phase.keys()[result], stage_time, kills, team_scrap])
 	enemy_bullets.clear()
-	hud.show_banner("Stage clear!\n%d kills, %d of %d ground targets\n(The boss arrives in M4.)" % [
-		kills, ground_kills, ground.count()], CLEAR_SECONDS)
+	for ship: Ship in ships():
+		ship.controls_enabled = false
+	if result == Phase.GAME_OVER:
+		hud.show_banner("Game over\nThe team ran out of ships.", END_SECONDS)
+	else:
+		hud.show_banner("Stage clear!\n%d kills, %d of %d ground targets, %d Scrap" % [
+			kills, ground_kills, ground.count(), team_scrap], END_SECONDS)
 
 
 # --- Networking --------------------------------------------------------------
+
+## A ship's host-owned extras as bytes: power, special charges, then Rapid
+## Fire, Wingmen, Shield and respawn countdown in tenths of a second.
+static func pack_ship_extra(ship: Ship) -> PackedByteArray:
+	var extra := PackedByteArray()
+	extra.append(ship.state.power)
+	extra.append(clampi(ship.special_charges, 0, 255))
+	for seconds: float in [ship.state.rapid_fire_left, ship.state.wingmen_left, ship.state.shield_left, ship.respawn_left]:
+		extra.append(clampi(ceili(seconds * 10.0), 0, 255))
+	return extra
+
 
 func _send_snapshot() -> void:
 	if _ready_peers.is_empty():
@@ -431,6 +680,7 @@ func _send_snapshot() -> void:
 	var hp := PackedInt32Array()
 	var max_hp := PackedInt32Array()
 	var flags := PackedByteArray()
+	var extras := PackedByteArray()
 	for ship: Ship in ships():
 		ids.append(ship.peer_id)
 		positions.append(ship.state.position)
@@ -438,8 +688,10 @@ func _send_snapshot() -> void:
 		hp.append(ship.health.hp)
 		max_hp.append(ship.health.max_hp)
 		flags.append((1 if ship.state.focused else 0) | (2 if ship.health.is_invulnerable() else 0))
+		extras.append_array(pack_ship_extra(ship))
+	var team := PackedInt32Array([kills, ground_kills, team_scrap, credits, phase])
 	for peer_id: int in _ready_peers:
-		_receive_snapshot.rpc_id(peer_id, stage_time, kills, ground_kills, ids, positions, acks, hp, max_hp, flags)
+		_receive_snapshot.rpc_id(peer_id, stage_time, team, boss_hp_ratio, ids, positions, acks, hp, max_hp, flags, extras)
 
 
 ## Client -> host, once, when this client's stage has loaded.
@@ -450,29 +702,38 @@ func _notify_ready() -> void:
 	var peer_id := multiplayer.get_remote_sender_id()
 	_ready_peers[peer_id] = true
 	_add_ship(peer_id)
-	# Everything already flying and already wrecked (a friend dropping in mid-stage).
+	# Everything already flying, wrecked or floating (a friend dropping in mid-stage).
 	var data := enemies.records()
 	_receive_enemies.rpc_id(peer_id, (data[0] as PackedInt32Array).size(), data)
 	var wrecked := ground.destroyed_indices()
 	_receive_wrecks.rpc_id(peer_id, wrecked.size(), wrecked)
-	if phase == Phase.CLEAR:
-		_receive_clear.rpc_id(peer_id, kills, ground_kills)
+	pickups.send_full_state(peer_id)
+	if phase == Phase.CLEAR or phase == Phase.GAME_OVER:
+		_receive_end.rpc_id(peer_id, phase, kills, ground_kills, team_scrap)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered", 1)
-func _receive_snapshot(host_time: float, host_kills: int, host_ground_kills: int, ids: PackedInt32Array,
+func _receive_snapshot(host_time: float, team: PackedInt32Array, host_boss_hp: float, ids: PackedInt32Array,
 		positions: PackedVector2Array, acks: PackedInt32Array, hp: PackedInt32Array, max_hp: PackedInt32Array,
-		flags: PackedByteArray) -> void:
+		flags: PackedByteArray, extras: PackedByteArray) -> void:
 	_sync_clock(host_time)
-	kills = host_kills
-	ground_kills = host_ground_kills
+	if team.size() >= 5:
+		kills = team[0]
+		ground_kills = team[1]
+		team_scrap = team[2]
+		credits = team[3]
+		if team[4] == Phase.BOSS and phase == Phase.PLAYING:
+			phase = Phase.BOSS
+			_show_boss_warning()
+	boss_hp_ratio = host_boss_hp
 	var n := ids.size()
-	for array_size: int in [positions.size(), acks.size(), hp.size(), max_hp.size(), flags.size()]:
+	for array_size: int in [positions.size(), acks.size(), hp.size(), max_hp.size(), flags.size(), extras.size() / 6]:
 		n = mini(n, array_size)
 	for i: int in n:
 		var ship := ship_of(ids[i])
 		if ship != null:
-			ship.apply_server_state(positions[i], acks[i], (flags[i] & 1) != 0, hp[i], max_hp[i], (flags[i] & 2) != 0)
+			ship.apply_server_state(positions[i], acks[i], (flags[i] & 1) != 0, hp[i], max_hp[i], (flags[i] & 2) != 0,
+				extras.slice(i * 6, i * 6 + 6))
 
 
 ## Client: follow the host's stage clock. Our estimate of "host time now" is the
@@ -499,7 +760,11 @@ func _receive_redirect(index: int, time: float, origin: Vector2, target: Vector2
 
 @rpc("authority", "call_remote", "reliable")
 func _receive_kill(index: int) -> void:
+	var boss := enemies.is_alive(index) and enemies.type_of(index).is_boss
+	var at := enemies.position_of(index)
 	enemies.kill(index)
+	if boss:
+		effects.chain(at, Vector2(30, 16), 10, _rng)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -514,10 +779,16 @@ func _receive_wrecks(_count: int, indices: PackedInt32Array) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func _receive_clear(host_kills: int, host_ground_kills: int) -> void:
+func _receive_special(peer_id: int, kind: int, at: Vector2) -> void:
+	_show_special(peer_id, kind, at)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _receive_end(result: int, host_kills: int, host_ground_kills: int, host_scrap: int) -> void:
 	kills = host_kills
 	ground_kills = host_ground_kills
-	_show_clear()
+	team_scrap = host_scrap
+	_show_end(Phase.GAME_OVER if result == Phase.GAME_OVER else Phase.CLEAR)
 
 
 ## Client: enemy patterns fired on the host. They're fast-forwarded to where
@@ -537,7 +808,9 @@ func _receive_patterns(patterns: PackedInt32Array, origins: PackedVector2Array, 
 
 
 @rpc("authority", "call_remote", "reliable")
-func _receive_shot(shooter_id: int, pattern: int, origin: Vector2, seed_value: int, focus: bool, fired_at: float) -> void:
+func _receive_shot(shooter_id: int, pattern: int, origin: Vector2, seed_value: int, focus: bool, power: int,
+		wingmen: bool, fired_at: float) -> void:
 	if not ShotPatterns.is_ship_pattern(pattern):
 		return
-	_spawn_shot(shooter_id, pattern, origin, seed_value, focus, clampf(stage_time - fired_at, 0.0, MAX_SHOT_CATCH_UP))
+	_spawn_shot(shooter_id, pattern, origin, seed_value, focus, clampi(power, 1, ShipMotor.MAX_POWER), wingmen,
+		clampf(stage_time - fired_at, 0.0, MAX_SHOT_CATCH_UP))

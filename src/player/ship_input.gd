@@ -9,3 +9,6 @@ var move: Vector2 = Vector2.ZERO
 var focus: bool = false
 ## The auto-fire setting already applied (FireControl).
 var fire: bool = false
+## How many times the special button was pressed so far. A count instead of a
+## "pressed" flag: inputs travel unreliably, and a lost packet must not lose a press.
+var special_count: int = 0

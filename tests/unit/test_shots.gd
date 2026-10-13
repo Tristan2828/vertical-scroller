@@ -8,8 +8,8 @@ func test_spread_is_a_straight_stream_and_two_angled_ones() -> void:
 	var angles := ShotPatterns.angles(ShotPatterns.Id.SHIP_SPREAD, UP, 1)
 	assert_eq(angles.size(), 3)
 	assert_almost_eq(angles[0], UP, 0.0001)
-	assert_almost_eq(angles[1], UP - deg_to_rad(ShotPatterns.SPREAD_DEGREES), 0.0001)
-	assert_almost_eq(angles[2], UP + deg_to_rad(ShotPatterns.SPREAD_DEGREES), 0.0001)
+	assert_almost_eq(angles[1], UP - deg_to_rad(ShotPatterns.SPREAD_DEGREES[0]), 0.0001)
+	assert_almost_eq(angles[2], UP + deg_to_rad(ShotPatterns.SPREAD_DEGREES[0]), 0.0001)
 
 
 func test_focus_is_two_parallel_streams() -> void:

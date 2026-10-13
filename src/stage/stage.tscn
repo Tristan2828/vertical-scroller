@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://src/combat/projectile_manager.gd" id="4_bullets"]
 [ext_resource type="Script" path="res://src/enemies/ground_manager.gd" id="5_ground"]
 [ext_resource type="PackedScene" path="res://src/stage/stage_hud.tscn" id="6_hud"]
+[ext_resource type="Script" path="res://src/combat/effects_layer.gd" id="7_effects"]
+[ext_resource type="Script" path="res://src/progression/pickup_manager.gd" id="8_pickups"]
 
 [node name="Stage" type="Node2D"]
 process_mode = 1
@@ -19,6 +21,12 @@ script = ExtResource("5_ground")
 
 [node name="Enemies" type="Node2D" parent="."]
 script = ExtResource("3_enemies")
+
+[node name="Effects" type="Node2D" parent="."]
+script = ExtResource("7_effects")
+
+[node name="Pickups" type="Node2D" parent="."]
+script = ExtResource("8_pickups")
 
 [node name="PlayerBullets" type="Node2D" parent="."]
 script = ExtResource("4_bullets")

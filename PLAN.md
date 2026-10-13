@@ -32,7 +32,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Per-player ship recolor.
 - **Done when:** a headless host + client on autopilot play the test wave together; the smoke test shows the client's shots damaging enemies on the host; two real windows on one PC play smoothly.
 
-## M3: Stage system — built 2026-10-12, waiting for the owner's playtest (solo, and online when a friend is around)
+## M3: Stage system ✅ (built 2026-10-12; the owner's playtest is still to come)
 - **Stage data:** a `StageDef` resource (length, scroll speed, background layers, wave list, ground objects, boss, music) + a wave format (`shape, time, x, count, spacing, enemy type, gun, variant group`).
 - **Path shape library:** S-curve, dive-and-retreat, circle-strafe, cross-screen, hover-and-leave; plus 2 homing types (kamikaze drone, tracking gunship).
 - **Enemy types as data** (HP, speed, sprite, gun pattern, drops); enemy shot patterns as events.
@@ -42,7 +42,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Partial co-op HP scaling.
 - **Done when:** a full ~4 minute Planet Base stage (gray-box art) plays start to finish, solo and online; tests cover wave timing, variants and path determinism.
 
-## M4: Boss, specials, pickups, death
+## M4: Boss, specials, pickups, death — built 2026-10-12, waiting for the owner's playtest
 - Stage boss with an attack script (adapt `BossBrain` / `BossStep`), the scroll stopping for the boss, a boss HP bar.
 - Specials: **Mega Bomb** (1 charge) and **Shield** (3 charges); charges refill per stage.
 - Main gun power levels (1–5) from power orbs; 2 timed boosts (Rapid Fire, Wingmen).

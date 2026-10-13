@@ -29,3 +29,9 @@ extends Resource
 @export var focus_bullet_damage: int = 9
 ## Where shots appear, from the ship's center.
 @export var muzzle_offset: Vector2 = Vector2(0, -12)
+
+@export_group("Power levels")
+## Main gun power 1-5 (DESIGN.md §3, draft): streams and damage at each level.
+@export var spread_streams: Array[int] = [3, 5, 5, 7, 7]
+@export var focus_streams: Array[int] = [2, 2, 3, 3, 4]
+@export var power_damage: Array[float] = [1.0, 1.0, 1.3, 1.3, 1.6]

@@ -13,6 +13,7 @@ const ALL: Array[EnemyType] = [
 	preload("res://src/enemies/types/tank.tres"),
 	preload("res://src/enemies/types/bunker.tres"),
 	preload("res://src/enemies/types/radar.tres"),
+	preload("res://src/enemies/types/base_boss.tres"),
 ]
 
 

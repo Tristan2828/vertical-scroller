@@ -16,3 +16,7 @@ fire_interval = 2.0
 first_shot_delay = 0.6
 bullet_damage = 8
 body_color = Color(0.55, 0.58, 0.54, 1)
+scrap = 3
+orb_chance = 0.08
+boost_chance = 0.0
+charge_chance = 0.0

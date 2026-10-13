@@ -10,6 +10,9 @@ const FIRED: int = 1
 const COOLDOWN_EPSILON: float = 0.0001
 ## Mouse mode: closer than this to the cursor counts as there.
 const GLIDE_ARRIVED: float = 0.5
+const MAX_POWER: int = 5
+## Rapid Fire boost: shots come this much faster (the interval is multiplied).
+const RAPID_FIRE_INTERVAL: float = 0.6
 
 
 ## Advances `state` by one tick. Returns FIRED if the main gun shot.
@@ -17,12 +20,31 @@ static func step(state: ShipState, input: ShipInput, stats: ShipStats, bounds: R
 	var result := 0
 	state.focused = input.focus
 	state.fire_cooldown_left = maxf(state.fire_cooldown_left - delta, 0.0)
+	state.rapid_fire_left = maxf(state.rapid_fire_left - delta, 0.0)
+	state.wingmen_left = maxf(state.wingmen_left - delta, 0.0)
+	state.shield_left = maxf(state.shield_left - delta, 0.0)
 	var move := input.move.limit_length(1.0)
 	state.position = clamp_to_bounds(state.position + move * speed_of(stats, input.focus) * delta, bounds, stats.body_radius)
 	if input.fire and state.fire_cooldown_left <= COOLDOWN_EPSILON:
-		state.fire_cooldown_left = stats.focus_fire_interval if input.focus else stats.fire_interval
+		state.fire_cooldown_left = fire_interval(stats, state, input.focus)
 		result |= FIRED
 	return result
+
+
+static func fire_interval(stats: ShipStats, state: ShipState, focus: bool) -> float:
+	var interval := stats.focus_fire_interval if focus else stats.fire_interval
+	return interval * RAPID_FIRE_INTERVAL if state.rapid_fire_left > 0.0 else interval
+
+
+## Streams and damage of a shot at the ship's power level.
+static func streams(stats: ShipStats, power: int, focus: bool) -> int:
+	var table := stats.focus_streams if focus else stats.spread_streams
+	return table[clampi(power, 1, table.size()) - 1]
+
+
+static func damage(stats: ShipStats, power: int, focus: bool) -> int:
+	var base := stats.focus_bullet_damage if focus else stats.bullet_damage
+	return roundi(base * stats.power_damage[clampi(power, 1, stats.power_damage.size()) - 1])
 
 
 static func speed_of(stats: ShipStats, focus: bool) -> float:

@@ -35,6 +35,18 @@ enum Homing {
 ## Pixels per second while homing.
 @export var homing_speed: float = 200.0
 
+## Bosses: the stage's last enemy, driven by the stage file's boss script
+## (BossBrain) instead of a gun timer; the HUD shows its HP bar.
+@export var is_boss: bool = false
+
+@export_group("Drops")
+## Scrap dropped on death (split into pieces), and the chance (0..1) of each
+## rarer drop (draft numbers, DESIGN.md §3/§4).
+@export var scrap: int = 1
+@export var orb_chance: float = 0.0
+@export var boost_chance: float = 0.0
+@export var charge_chance: float = 0.0
+
 @export_group("Gun")
 ## ShotPatterns.Id it fires, or -1 for none.
 @export var shot_pattern: int = -1

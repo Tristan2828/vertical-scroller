@@ -11,3 +11,7 @@ radius = 15.0
 ground = true
 size = Vector2(32, 32)
 body_color = Color(0.6, 0.63, 0.66, 1)
+scrap = 6
+orb_chance = 0.15
+boost_chance = 0.0
+charge_chance = 0.2

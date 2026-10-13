@@ -13,6 +13,8 @@ extends RefCounted
 ##                                lobby by itself, clients ready up by themselves
 ##   --run-for=<seconds>          print a report and quit (headless smoke tests)
 ##   --start-at=<seconds>         host starts the stage clock here (test later parts of a stage)
+##   --weak-bosses                bosses have 2% HP (test the stage ending quickly)
+##   --invincible                 hits still land and count, but HP refills at once
 ##   --screenshot-dir=<folder>    save PNGs: title menu, lobby, gameplay, pause menu, settings
 ##                                (needs a real window, not --headless)
 ##   --window=<width>x<height>    windowed at this size (ignores the fullscreen setting)
@@ -32,6 +34,8 @@ static var local_only: bool = false
 static var autopilot: bool = false
 static var run_for_seconds: float = 0.0
 static var start_at_seconds: float = 0.0
+static var weak_bosses: bool = false
+static var invincible: bool = false
 static var screenshot_dir: String = ""
 ## Zero = use the fullscreen setting.
 static var window_size: Vector2i = Vector2i.ZERO
@@ -62,6 +66,10 @@ static func parse(args: PackedStringArray) -> void:
 			run_for_seconds = arg.trim_prefix("--run-for=").to_float()
 		elif arg.begins_with("--start-at="):
 			start_at_seconds = maxf(arg.trim_prefix("--start-at=").to_float(), 0.0)
+		elif arg == "--weak-bosses":
+			weak_bosses = true
+		elif arg == "--invincible":
+			invincible = true
 		elif arg.begins_with("--screenshot-dir="):
 			screenshot_dir = arg.trim_prefix("--screenshot-dir=")
 		elif arg.begins_with("--window="):

@@ -14,3 +14,7 @@ dies_on_contact = true
 homing = 1
 homing_delay = 0.8
 homing_speed = 230.0
+scrap = 1
+orb_chance = 0.03
+boost_chance = 0.0
+charge_chance = 0.0

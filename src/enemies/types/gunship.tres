@@ -17,3 +17,7 @@ shot_pattern = 5
 fire_interval = 1.8
 first_shot_delay = 1.6
 bullet_damage = 12
+scrap = 8
+orb_chance = 0.5
+boost_chance = 0.25
+charge_chance = 0.05

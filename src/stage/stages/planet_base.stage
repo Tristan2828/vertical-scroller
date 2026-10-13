@@ -150,3 +150,17 @@ wave 222  drone circle_strafe x=300 count=6 spacing=0.35
 wave 222  drone circle_strafe x=660 count=6 spacing=0.35 mirror
 ground 224 heavy_turret x=480
 wave 228  fighter s_curve x=480 count=4 spacing=0.6
+
+# --- Boss (from 240 s): the base's command gunship. The scroll stops. ---
+# Phase 1: aimed fans from the wing guns, a spinning ring, bursts at each ship.
+# Phase 2 (below half HP): a spiral, lines of shots, a ring with gaps, a spray.
+boss base_boss x=480
+boss_step 1 aimed_fan_5 aim=nearest wait=1.3 dx=-44 dy=12
+boss_step 1 aimed_fan_5 aim=nearest wait=1.3 dx=44 dy=12
+boss_step 1 ring_12 aim=spin wait=1.6
+boss_step 1 burst_3 aim=each wait=1.2 dy=20
+boss_step 2 spiral aim=nearest wait=1.0
+boss_step 2 aimed_line_5 aim=each wait=0.8 dx=-44 dy=12
+boss_step 2 aimed_line_5 aim=each wait=0.8 dx=44 dy=12
+boss_step 2 ring_24 aim=nearest wait=1.8
+boss_step 2 spray aim=fixed angle=90 wait=1.2 dy=20

@@ -29,7 +29,7 @@ var play_area: Rect2 = Rect2(Vector2.ZERO, Vector2(ScreenFit.BASE))
 var damage_by_peer: Dictionary[int, int] = {}
 
 var _defs: Array[StageDef.GroundDef] = []
-var _scroll_speed: float = 60.0
+var _stage: StageDef = null
 var _time: float = 0.0
 ## Host: HP, set when the object first comes on screen (co-op scaling then).
 var _hp: PackedInt32Array = PackedInt32Array()
@@ -46,7 +46,7 @@ var _explosions: Array[Vector3] = []
 
 func setup(def: StageDef) -> void:
 	_defs = def.grounds
-	_scroll_speed = def.scroll_speed
+	_stage = def
 	var n := _defs.size()
 	_hp.resize(n)
 	_hp.fill(-1)
@@ -68,15 +68,16 @@ func count() -> int:
 
 
 ## Where object `index` is at `stage_time`: it scrolls in at the top of the
-## screen at its time, and tanks also drive along the map.
+## screen at its time (and stops when the scroll stops for the boss); tanks
+## also drive along the map.
 func position_at(index: int, stage_time: float) -> Vector2:
 	var def := _defs[index]
 	var type := EnemyTypes.ALL[def.type_id]
-	var age := stage_time - def.time
+	var scrolled := _stage.scroll_distance(stage_time) - _stage.scroll_distance(def.time)
 	var drift := type.drift
 	if def.mirror:
 		drift.x = -drift.x
-	return Vector2(def.x, -type.size.y / 2.0) + Vector2(0.0, _scroll_speed * age) + drift * age
+	return Vector2(def.x, -type.size.y / 2.0) + Vector2(0.0, scrolled) + drift * (stage_time - def.time)
 
 
 ## `ships` = ship positions on this screen (guns turn toward the nearest).

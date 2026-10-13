@@ -10,3 +10,7 @@ max_hp = 30
 radius = 7.0
 sprite = "drone"
 contact_damage = 10
+scrap = 1
+orb_chance = 0.04
+boost_chance = 0.0
+charge_chance = 0.0

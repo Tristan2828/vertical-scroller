@@ -154,7 +154,7 @@ func resolve_ship_hits(ships: Array[Ship], is_host: bool) -> void:
 	var spots := PackedVector2Array()
 	var reaches_squared := PackedFloat32Array()
 	for ship: Ship in ships:
-		if not ship.health.is_invulnerable():
+		if not ship.health.is_invulnerable() and not ship.is_down() and ship.state.shield_left <= 0.0:
 			var reach := ship.stats.hitbox_radius + hit_radius
 			targets.append(ship)
 			spots.append(ship.state.position)
@@ -180,8 +180,8 @@ func resolve_ship_hits(ships: Array[Ship], is_host: bool) -> void:
 			ship.take_hit(_damages[i])
 		hit_at.emit(point)
 		_remove(i)
-		if ship.health.is_invulnerable():
-			reaches_squared[hit] = -1.0  # Blinking now: later bullets pass through.
+		if ship.health.is_invulnerable() or ship.is_down():
+			reaches_squared[hit] = -1.0  # Blinking or down now: later bullets pass through.
 
 
 ## Where bullet `i` was at the start of this tick.

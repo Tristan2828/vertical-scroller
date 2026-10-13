@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "base_boss"
+display_name = "Command Gunship"
+max_hp = 8000
+radius = 26.0
+sprite = "base_boss"
+contact_damage = 25
+is_boss = true
+scrap = 60
+orb_chance = 1.0
+bullet_damage = 14

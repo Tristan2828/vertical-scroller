@@ -1,7 +1,8 @@
 class_name Lobby
 extends Control
-## The party screen before a stage (solo too): who's here, their ship, who's
-## ready, and the host's invite. The host owns the state (LobbyState) and sends
+## The party screen before a stage (solo too): who's here, their ship and
+## special (your row has a button to change yours), who's ready, and the
+## host's invite. The host owns the state (LobbyState) and sends
 ## it to everyone; clients ask the host to change their ship or ready flag.
 ## Trimmed from Medieval Survival's lobby: no hero picker or difficulty pages.
 ## The ship pick is a placeholder until there's a second ship.
@@ -40,12 +41,12 @@ func _ready() -> void:
 	_start_button.visible = is_host
 	_ready_button.visible = not is_host
 	if is_host:
-		_state.add(1, RunSetup.ship_for(1))
+		_state.add(1, RunSetup.ship_for(1), RunSetup.special_for(1))
 		for peer_id: int in RunSetup.order:
 			if multiplayer.get_peers().has(peer_id):
-				_state.add(peer_id, RunSetup.ship_for(peer_id))
+				_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id))
 		for peer_id: int in multiplayer.get_peers():
-			_state.add(peer_id, RunSetup.ship_for(peer_id))
+			_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id))
 		multiplayer.peer_connected.connect(_on_peer_connected)
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 		Net.invite.changed.connect(_refresh)
@@ -162,7 +163,8 @@ func _refresh() -> void:
 func _refresh_party() -> void:
 	var signature := ""
 	for peer_id: int in _state.order:
-		signature += "%d:%s:%d:%s;" % [peer_id, Net.names.get(peer_id, ""), _state.ships[peer_id], _state.ready.get(peer_id, false)]
+		signature += "%d:%s:%d:%d:%s;" % [peer_id, Net.names.get(peer_id, ""), _state.ships[peer_id],
+			_state.specials.get(peer_id, 0), _state.ready.get(peer_id, false)]
 	if signature == _party_signature:
 		return
 	_party_signature = signature
@@ -187,6 +189,21 @@ func _refresh_party() -> void:
 		ship_label.text = Ships.ALL[_state.ships[peer_id]].display_name
 		ship_label.add_theme_color_override("font_color", DIM_COLOR)
 		row.add_child(ship_label)
+		var special: int = _state.specials.get(peer_id, Specials.Kind.MEGA_BOMB)
+		if peer_id == me:
+			var special_button := Button.new()
+			special_button.text = Specials.NAMES[special]
+			special_button.tooltip_text = Specials.HINTS[special]
+			special_button.custom_minimum_size = Vector2(76, 0)
+			special_button.pressed.connect(func() -> void: _choose_special_locally((special + 1) % Specials.Kind.size()))
+			row.add_child(special_button)
+		else:
+			var special_label := Label.new()
+			special_label.text = Specials.NAMES[special]
+			special_label.custom_minimum_size = Vector2(76, 0)
+			special_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			special_label.add_theme_color_override("font_color", DIM_COLOR)
+			row.add_child(special_label)
 		var ready_label := Label.new()
 		ready_label.custom_minimum_size = Vector2(56, 0)
 		ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -203,6 +220,17 @@ func _refresh_party() -> void:
 		_party.add_child(row)
 
 
+func _choose_special_locally(special: int) -> void:
+	if multiplayer.is_server():
+		if _state.choose_special(1, special):
+			_broadcast()
+	else:
+		_state.choose_special(multiplayer.get_unique_id(), special)
+		_party_signature = ""
+		_refresh()
+		_request_special.rpc_id(1, special)
+
+
 func _set_ready_locally(is_ready: bool) -> void:
 	if not multiplayer.is_server():
 		_request_ready.rpc_id(1, is_ready)
@@ -212,6 +240,7 @@ func _start_locally() -> void:
 	if not multiplayer.is_server() or not _state.can_start(1):
 		return
 	RunSetup.ships = _state.ships.duplicate()
+	RunSetup.specials = _state.specials.duplicate()
 	RunSetup.order = _state.order.duplicate()
 	set_process(false)
 	start_requested.emit()
@@ -220,7 +249,7 @@ func _start_locally() -> void:
 # --- Host ----------------------------------------------------------------------
 
 func _on_peer_connected(peer_id: int) -> void:
-	_state.add(peer_id, RunSetup.ship_for(peer_id))
+	_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id))
 	_broadcast()
 
 
@@ -233,12 +262,14 @@ func _on_peer_disconnected(peer_id: int) -> void:
 func _broadcast() -> void:
 	var ids := PackedInt32Array(_state.order)
 	var ships := PackedInt32Array()
+	var specials := PackedInt32Array()
 	var readies := PackedByteArray()
 	for peer_id: int in _state.order:
 		ships.append(_state.ships[peer_id])
+		specials.append(_state.specials.get(peer_id, Specials.Kind.MEGA_BOMB))
 		readies.append(1 if _state.ready.get(peer_id, false) else 0)
 	for peer_id: int in _ready_peers:
-		_receive_state.rpc_id(peer_id, ids, ships, readies)
+		_receive_state.rpc_id(peer_id, ids, ships, specials, readies)
 	_refresh()
 
 
@@ -252,6 +283,12 @@ func _notify_ready() -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func _request_special(special: int) -> void:
+	if multiplayer.is_server() and _state.choose_special(multiplayer.get_remote_sender_id(), special):
+		_broadcast()
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _request_ready(is_ready: bool) -> void:
 	if multiplayer.is_server():
 		_state.set_ready(multiplayer.get_remote_sender_id(), is_ready)
@@ -260,10 +297,11 @@ func _request_ready(is_ready: bool) -> void:
 
 ## The host is always in the list, so the arrays are never empty.
 @rpc("authority", "call_remote", "reliable")
-func _receive_state(ids: PackedInt32Array, ships: PackedInt32Array, readies: PackedByteArray) -> void:
+func _receive_state(ids: PackedInt32Array, ships: PackedInt32Array, specials: PackedInt32Array,
+		readies: PackedByteArray) -> void:
 	var fresh := LobbyState.new()
-	for i: int in mini(ids.size(), mini(ships.size(), readies.size())):
-		fresh.add(ids[i], clampi(ships[i], 0, Ships.ALL.size() - 1))
+	for i: int in mini(ids.size(), mini(ships.size(), mini(specials.size(), readies.size()))):
+		fresh.add(ids[i], clampi(ships[i], 0, Ships.ALL.size() - 1), specials[i])
 		fresh.set_ready(ids[i], readies[i] != 0)
 	_state = fresh
 	_ready_button.set_pressed_no_signal(_state.ready.get(multiplayer.get_unique_id(), false))
