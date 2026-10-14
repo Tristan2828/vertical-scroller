@@ -59,6 +59,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 
 ## M6: Art pass 1 and first release
 - Pick packs (ships around 32–64 px, sci-fi military base tiles, bullets, explosions); `/gamekit:pack-import`, one palette, `assets.yaml`, `CREDITS.md`.
+- **Redo `palette.hex` once the art direction is set.** It's a placeholder for now (the gray-box `PixelArt.PALETTE` colors plus `BossArt`'s steel); replace it with the chosen packs' palette so gamekit snaps new art to the real colors, and keep the player colors (`#FF00FF` / `#800080`) reserved.
 - HUD layout for 1–4 players; title menu; pause menu; settings (volume, scaling mode, auto-fire mode, mouse mode, screen shake).
 - Placeholder synth SFX/music (copy `Sfx` / `Music` / `Synth`).
 - Copy the updater, feedback screen, `release.ps1`, `docs/RELEASING.md`, the Discord workflow; `docs/PLAYTEST.md` checklist. **The owner decides** on creating the GitHub repo before anything is pushed.
@@ -67,7 +68,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 ### Playtest changes so far (DESIGN.md §7)
 - Playtest 1 (v0.0.5): 5 ships unlocked, a busier stage, co-op scaling by wave size, bigger power-up icons.
 - Playtest 2 (v0.0.6): enemies ~18% harder, HUD at the top-left, the multi-part Fortress Gunship boss; then the lobby's Boss only mode (v0.0.8).
-- Playtest 3 (after v0.0.8, not released yet): boss pixel art (`BossArt` / `BossDraw`), HUD icons (red HP bar, power arrows, bomb / shield charges, boost timers), tiered stage goals.
+- Playtest 3 (released as v0.0.9): boss pixel art (`BossArt` / `BossDraw`), HUD icons (red HP bar, power arrows, bomb / shield charges, boost timers), tiered stage goals.
 - Next small step: medal challenges per stage (option B, on top of the tiers).
 
 ## After v0.1.0
