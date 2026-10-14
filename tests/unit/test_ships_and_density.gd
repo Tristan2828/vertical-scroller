@@ -131,10 +131,10 @@ func _add_teammate(peer_id: int) -> void:
 func test_co_op_makes_waves_bigger_with_a_small_hp_bump() -> void:
 	_make_stage()
 	assert_eq(stage._wave_count(10), 10)
-	assert_eq(stage._hp_scale(), 1.0)
+	assert_almost_eq(stage._hp_scale(), Stage.ENEMY_HP, 0.0001)
 	_add_teammate(42)
 	assert_eq(stage._wave_count(10), roundi(10 * (1.0 + Stage.COUNT_PER_EXTRA_PLAYER)))
-	assert_almost_eq(stage._hp_scale(), 1.0 + Stage.HP_PER_EXTRA_PLAYER, 0.0001)
+	assert_almost_eq(stage._hp_scale(), (1.0 + Stage.HP_PER_EXTRA_PLAYER) * Stage.ENEMY_HP, 0.0001)
 
 
 func test_the_boss_gets_more_hp_per_player_than_regular_enemies() -> void:

@@ -25,6 +25,11 @@ enum Phase { PLAYING, CLEAR, BOSS, GAME_OVER }
 ## this much to every wave's size (more on screen), plus a small HP bump; the
 ## boss can't come in bigger numbers, so it gets more HP instead. Draft numbers.
 const COUNT_PER_EXTRA_PLAYER: float = 0.35
+## How tough and how trigger-happy enemies are overall (playtest 2: "15-20%
+## harder"): HP multiplier and gun interval multiplier, for every enemy,
+## ground target and the boss. Tune here.
+const ENEMY_HP: float = 1.15
+const ENEMY_FIRE_INTERVAL: float = 0.9
 const HP_PER_EXTRA_PLAYER: float = 0.2
 const BOSS_HP_PER_EXTRA_PLAYER: float = 0.5
 const SHIP_START_Y: float = 460.0
@@ -136,7 +141,7 @@ func _ready() -> void:
 	ground.destroyed.connect(_on_ground_destroyed)
 	pickups.play_area = play_area
 	# Later stages shoot faster (draft: the interval shrinks with difficulty).
-	enemies.fire_interval_scale = 1.0 / (1.0 + 0.5 * (difficulty - 1.0))
+	enemies.fire_interval_scale = ENEMY_FIRE_INTERVAL / (1.0 + 0.5 * (difficulty - 1.0))
 	ground.fire_interval_scale = enemies.fire_interval_scale
 	_rng.randomize()
 	var title := def.name if run.stages_done == 0 else "%s (stage %d)" % [def.name, run.stages_done + 1]
@@ -325,7 +330,7 @@ func _extra_players() -> int:
 
 ## Enemy HP: co-op scaling and the run's difficulty.
 func _hp_scale() -> float:
-	return (1.0 + HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty
+	return (1.0 + HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty * ENEMY_HP
 
 
 ## How many enemies a wave of `count` has with this many players.
@@ -731,7 +736,7 @@ func _on_pickup_collected(kind: int, value: int, peer_id: int) -> void:
 func _start_boss() -> void:
 	phase = Phase.BOSS
 	_boss_started_at = stage_time
-	var hp_scale := (1.0 + BOSS_HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty
+	var hp_scale := (1.0 + BOSS_HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty * ENEMY_HP
 	hp_scale *= WEAK_BOSS_HP if LaunchOptions.weak_bosses else 1.0
 	_boss_index = enemies.spawn(def.boss_type, PathShapes.Id.BOSS, stage_time, Vector2(def.boss_x, BOSS_START_Y),
 		false, 1.0, hp_scale)

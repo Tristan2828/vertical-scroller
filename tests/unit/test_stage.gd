@@ -311,7 +311,7 @@ func test_the_second_stage_is_harder() -> void:
 	RunState.current.stages_done = 1
 	_make_stage()
 	assert_gt(stage.difficulty, 1.0)
-	assert_gt(stage._hp_scale(), 1.0)
+	assert_gt(stage._hp_scale(), Stage.ENEMY_HP)
 	assert_lt(stage.enemies.fire_interval_scale, 1.0)
 
 
@@ -331,12 +331,12 @@ func test_elite_wing_turns_one_wave_gold() -> void:
 func test_armored_turrets_toughen_the_ground() -> void:
 	RunState.current.modifiers = [StageModifiers.Id.ARMORED_TURRETS, StageModifiers.Id.NONE]
 	_make_stage()
-	assert_almost_eq(stage._ground_hp_scale(), StageModifiers.ARMOR_HP, 0.001)
+	assert_almost_eq(stage._ground_hp_scale(), StageModifiers.ARMOR_HP * Stage.ENEMY_HP, 0.001)
 
 
 func test_solo_has_no_hp_scaling() -> void:
 	_make_stage()
-	assert_eq(stage._hp_scale(), 1.0)
+	assert_almost_eq(stage._hp_scale(), Stage.ENEMY_HP, 0.0001, "only the global knob")
 
 
 func test_snapshot_extras_round_trip() -> void:

@@ -1,14 +1,14 @@
 class_name StageHud
 extends CanvasLayer
-## Gray-box HUD: your HP bar, power level, special charges and boosts (bottom
-## left); teammates' names in their ship colors with small HP bars (top right);
+## Gray-box HUD: your HP bar, power level, special charges and boosts (top
+## left, so the bottom where the ships fly stays clear); teammates' names in their ship colors with small HP bars (top right);
 ## kills, ground targets, the team's Scrap and respawn credits; a thin stage
 ## progress line that becomes the boss's HP bar; the auto-fire state; a center
 ## banner (stage name, boss warning, shot down, game over); the results panel
 ## after a stage clear (goals, payout, score); and (host, online) the invite. The real HUD layout for 1–4 players comes with
 ## the art pass (M6).
 
-const HP_BAR: Rect2 = Rect2(8, 522, 140, 8)
+const HP_BAR: Rect2 = Rect2(8, 29, 140, 6)
 const TEAM_BAR_SIZE: Vector2 = Vector2(60, 3)
 const PROGRESS_BAR: Rect2 = Rect2(330, 4, 300, 2)
 const BOSS_BAR: Rect2 = Rect2(230, 18, 500, 6)
