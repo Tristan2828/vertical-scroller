@@ -14,6 +14,7 @@ extends RefCounted
 ##   --run-for=<seconds>          print a report and quit (headless smoke tests)
 ##   --start-at=<seconds>         host starts the stage clock here (test later parts of a stage)
 ##   --weak-bosses                bosses have 2% HP (test the stage ending quickly)
+##   --boss-only                  the lobby starts with "Boss only" on (every stage starts at its boss)
 ##   --invincible                 hits still land and count, but HP refills at once
 ##   --perf-log                   every second: fps, worst frame, step timings, memory, objects
 ##   --ship=<n>                   fly this ship (Ships.ALL index: 0 Striker, 1 Lancer, 2 Hornet,
@@ -73,6 +74,8 @@ static func parse(args: PackedStringArray) -> void:
 			start_at_seconds = maxf(arg.trim_prefix("--start-at=").to_float(), 0.0)
 		elif arg == "--weak-bosses":
 			weak_bosses = true
+		elif arg == "--boss-only":
+			RunSetup.boss_only = true
 		elif arg == "--invincible":
 			invincible = true
 		elif arg == "--perf-log":

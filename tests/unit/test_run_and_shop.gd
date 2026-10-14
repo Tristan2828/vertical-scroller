@@ -247,3 +247,36 @@ func test_run_summary_shows_the_run() -> void:
 	var summary := (load("res://src/ui/run_summary.tscn") as PackedScene).instantiate() as RunSummary
 	add_child_autofree(summary)
 	assert_string_contains(summary.debug_report(), "won, 2 of 2 stages")
+
+
+# --- Boss only (lobby switch, for testing) --------------------------------------------
+
+func test_boss_only_is_part_of_the_run_and_survives_the_network() -> void:
+	RunSetup.boss_only = true
+	var run := RunState.start([1], _rng())
+	RunSetup.boss_only = false
+	assert_true(run.boss_only)
+	assert_true(RunState.from_dict(run.to_dict()).boss_only)
+
+
+func test_boss_only_stages_start_just_before_the_boss() -> void:
+	var run := RunState.start([1], _rng())
+	run.boss_only = true
+	var stage := (load("res://src/stage/stage.tscn") as PackedScene).instantiate() as Stage
+	stage.set_physics_process(false)
+	add_child_autofree(stage)
+	assert_almost_eq(stage.stage_time, stage.def.length - Stage.BOSS_ONLY_LEAD, 0.001)
+	stage.local_ship().test_input = ShipInput.new()
+	for i: int in roundi((Stage.BOSS_ONLY_LEAD + 0.5) * 60.0):
+		stage.tick(1.0 / 60.0)
+	assert_eq(stage.phase, Stage.Phase.BOSS)
+
+
+func test_boss_only_runs_dont_count_toward_the_personal_best() -> void:
+	var run := RunState.start([1], _rng())
+	run.boss_only = true
+	run.result = "won"
+	run.score = 999999
+	var summary := (load("res://src/ui/run_summary.tscn") as PackedScene).instantiate() as RunSummary
+	add_child_autofree(summary)
+	assert_false(summary.new_best)

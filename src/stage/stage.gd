@@ -58,6 +58,8 @@ const END_SECONDS: float = 6.0
 const RESULTS_SECONDS: float = 12.0
 ## The team's shared respawn credits for the run (DESIGN.md §5, draft).
 const START_CREDITS: int = 3
+## Boss only (lobby switch): the stage starts this long before its boss.
+const BOSS_ONLY_LEAD: float = 3.0
 ## Where the boss appears (it flies down from there).
 const BOSS_START_Y: float = -40.0
 ## --weak-bosses: share of the boss's HP.
@@ -170,6 +172,8 @@ func _ready() -> void:
 		if modifier == StageModifiers.Id.ELITE_WING:
 			_elite_wave = StageModifiers.elite_wave(_waves, run.seed_value + run.stages_done)
 		stage_time = LaunchOptions.start_at_seconds
+		if run.boss_only and def.has_boss():
+			stage_time = maxf(stage_time, def.length - BOSS_ONLY_LEAD)
 		while _next_wave < _waves.size() and _waves[_next_wave].time < stage_time:
 			_next_wave += 1
 		multiplayer.peer_connected.connect(_add_ship)

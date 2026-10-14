@@ -59,6 +59,9 @@ var score: int = 0
 var team_rapid_fire: float = 0.0
 ## "won" / "lost" / "" while playing.
 var result: String = ""
+## Boss only (lobby switch, for testing): every stage starts just before its
+## boss. Doesn't count toward the personal best.
+var boss_only: bool = false
 var seed_value: int = 0
 ## peer id -> their part of the run.
 var players: Dictionary[int, PlayerRun] = {}
@@ -69,6 +72,7 @@ static func start(order: Array[int], rng: RandomNumberGenerator) -> RunState:
 	var run := RunState.new()
 	run.seed_value = rng.randi()
 	run.credits = Stage.START_CREDITS
+	run.boss_only = RunSetup.boss_only
 	for i: int in run.stage_plan.size():
 		# The first stage plays straight; later ones roll a twist (draft).
 		run.modifiers.append(StageModifiers.Id.NONE if i == 0 else StageModifiers.roll(rng))
@@ -117,7 +121,7 @@ func to_dict() -> Dictionary:
 	for peer_id: int in players:
 		player_data[peer_id] = players[peer_id].to_dict()
 	return {"stage_plan": stage_plan, "stages_done": stages_done, "modifiers": modifiers, "team_scrap": team_scrap,
-		"credits": credits, "score": score, "team_rapid_fire": team_rapid_fire, "result": result,
+		"credits": credits, "score": score, "team_rapid_fire": team_rapid_fire, "result": result, "boss_only": boss_only,
 		"seed": seed_value, "players": player_data}
 
 
@@ -134,6 +138,7 @@ static func from_dict(data: Dictionary) -> RunState:
 	run.score = int(data.get("score", 0))
 	run.team_rapid_fire = float(data.get("team_rapid_fire", 0.0))
 	run.result = str(data.get("result", ""))
+	run.boss_only = bool(data.get("boss_only", false))
 	run.seed_value = int(data.get("seed", 0))
 	var player_data: Dictionary = data.get("players", {})
 	for key: Variant in player_data:

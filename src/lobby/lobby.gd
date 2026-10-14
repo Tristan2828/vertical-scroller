@@ -32,6 +32,7 @@ var _status: Label
 var _ready_button: Button
 var _start_button: Button
 var _leave_button: Button
+var _mode_button: Button
 
 
 func _ready() -> void:
@@ -40,6 +41,7 @@ func _ready() -> void:
 	_start_button.visible = is_host
 	_ready_button.visible = not is_host
 	if is_host:
+		_state.boss_only = RunSetup.boss_only
 		_state.add(1, RunSetup.ship_for(1), RunSetup.special_for(1))
 		for peer_id: int in RunSetup.order:
 			if multiplayer.get_peers().has(peer_id):
@@ -88,6 +90,10 @@ func _build() -> void:
 	_party = VBoxContainer.new()
 	_party.add_theme_constant_override("separation", 2)
 	column.add_child(_party)
+	_mode_button = Button.new()
+	_mode_button.tooltip_text = "Boss only: every stage starts just before its boss (for testing)"
+	_mode_button.pressed.connect(_toggle_boss_only)
+	column.add_child(_mode_button)
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.add_theme_color_override("font_color", DIM_COLOR)
@@ -149,6 +155,9 @@ func _refresh() -> void:
 			_invite_label.text = "Invite: %s (copied to the clipboard; F1 copies again)\n%s" % [Net.invite.address, Net.invite.status]
 	else:
 		_invite_label.text = "Connected. The host starts the game."
+	_mode_button.text = "Mode: Boss only (practice)" if _state.boss_only else "Mode: Full stages"
+	# Only the host switches; everyone sees which mode is on.
+	_mode_button.disabled = not is_host
 	_refresh_party()
 	if is_host:
 		var waiting := _state.not_ready(1)
@@ -254,6 +263,13 @@ func _choose_special_locally(special: int) -> void:
 		_request_special.rpc_id(1, special)
 
 
+## Host: the "Boss only" switch.
+func _toggle_boss_only() -> void:
+	if multiplayer.is_server():
+		_state.boss_only = not _state.boss_only
+		_broadcast()
+
+
 func _set_ready_locally(is_ready: bool) -> void:
 	if not multiplayer.is_server():
 		_request_ready.rpc_id(1, is_ready)
@@ -264,6 +280,7 @@ func _start_locally() -> void:
 		return
 	RunSetup.ships = _state.ships.duplicate()
 	RunSetup.specials = _state.specials.duplicate()
+	RunSetup.boss_only = _state.boss_only
 	RunSetup.order = _state.order.duplicate()
 	set_process(false)
 	start_requested.emit()
@@ -292,7 +309,7 @@ func _broadcast() -> void:
 		specials.append(_state.specials.get(peer_id, Specials.Kind.MEGA_BOMB))
 		readies.append(1 if _state.ready.get(peer_id, false) else 0)
 	for peer_id: int in _ready_peers:
-		_receive_state.rpc_id(peer_id, ids, ships, specials, readies)
+		_receive_state.rpc_id(peer_id, ids, ships, specials, readies, _state.boss_only)
 	_refresh()
 
 
@@ -327,8 +344,9 @@ func _request_ready(is_ready: bool) -> void:
 ## The host is always in the list, so the arrays are never empty.
 @rpc("authority", "call_remote", "reliable")
 func _receive_state(ids: PackedInt32Array, ships: PackedInt32Array, specials: PackedInt32Array,
-		readies: PackedByteArray) -> void:
+		readies: PackedByteArray, boss_only: bool) -> void:
 	var fresh := LobbyState.new()
+	fresh.boss_only = boss_only
 	for i: int in mini(ids.size(), mini(ships.size(), mini(specials.size(), readies.size()))):
 		fresh.add(ids[i], clampi(ships[i], 0, Ships.ALL.size() - 1), specials[i])
 		fresh.set_ready(ids[i], readies[i] != 0)

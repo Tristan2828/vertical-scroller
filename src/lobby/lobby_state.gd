@@ -10,6 +10,8 @@ var ships: Dictionary[int, int] = {}
 ## peer id -> Specials.Kind
 var specials: Dictionary[int, int] = {}
 var ready: Dictionary[int, bool] = {}
+## The host's "Boss only" switch: every stage starts just before its boss (testing).
+var boss_only: bool = false
 
 
 func add(peer_id: int, ship: int, special: int = Specials.Kind.MEGA_BOMB) -> void:

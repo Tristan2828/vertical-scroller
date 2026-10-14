@@ -21,7 +21,8 @@ var _back_button: Button
 func _ready() -> void:
 	var run := RunState.current
 	var best_before := RunRecords.best_score()
-	new_best = RunRecords.submit(run.score)
+	# Boss-only practice runs don't count toward the personal best.
+	new_best = false if run.boss_only else RunRecords.submit(run.score)
 	_build(run, best_before)
 	print("[summary] run %s: %d of %d stages, score %d" % [run.result, run.stages_done, run.stage_plan.size(), run.score])
 	if multiplayer.is_server() and LaunchOptions.autopilot:
@@ -47,7 +48,9 @@ func _build(run: RunState, best_before: int) -> void:
 	_line(column, "Run complete!" if won else "Run over", TITLE_COLOR if won else LOST_COLOR, 18)
 	_line(column, "Stages cleared: %d of %d" % [run.stages_done, run.stage_plan.size()], DIM_COLOR)
 	_line(column, "Score: %d" % run.score, Color.WHITE, 18)
-	if new_best:
+	if run.boss_only:
+		_line(column, "Boss only (practice): not counted toward your best", DIM_COLOR)
+	elif new_best:
 		_line(column, "New personal best!", BEST_COLOR)
 	else:
 		_line(column, "Personal best: %d" % best_before, DIM_COLOR)

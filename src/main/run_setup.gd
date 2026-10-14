@@ -10,6 +10,8 @@ static var ships: Dictionary[int, int] = {}
 static var specials: Dictionary[int, int] = {}
 ## Lobby join order (host first); the stage hands out player slots in this order.
 static var order: Array[int] = []
+## The lobby's "Boss only" switch (RunState.boss_only).
+static var boss_only: bool = false
 
 
 static func special_for(peer_id: int) -> int:
