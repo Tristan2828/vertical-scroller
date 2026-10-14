@@ -72,6 +72,9 @@ var _shown_ratio: PackedFloat32Array = PackedFloat32Array()
 ## Host: stage time of the next launch (missile pods, hangars).
 var _next_launch: PackedFloat32Array = PackedFloat32Array()
 var _time: float = 0.0
+## Where the ships are (set by the stage each tick): boss turrets turn toward the
+## nearest one. Drawing only; the host's guns aim on their own.
+var aim_targets: PackedVector2Array = PackedVector2Array()
 ## Explosions: x, y, age.
 var _explosions: Array[Vector3] = []
 ## Pool indices of the enemies alive this tick (rebuilt by tick()), so bullets
@@ -443,12 +446,25 @@ func _remove(index: int, by_peer: int) -> void:
 	killed.emit(index, _positions[index], by_peer)
 
 
+## Angle from `from` to the nearest ship (straight down if there's none).
+func _aim_of(from: Vector2) -> float:
+	var best := -1.0
+	var aim := PI / 2.0
+	for point: Vector2 in aim_targets:
+		var distance := from.distance_squared_to(point)
+		if best < 0.0 or distance < best:
+			best = distance
+			aim = from.angle_to_point(point)
+	return aim
+
+
 func _draw() -> void:
 	for i: int in CAPACITY:
 		if is_alive(i):
 			var type := EnemyTypes.ALL[_types[i]]
 			if type.sprite.is_empty():
-				BossDraw.draw(self, type, _positions[i], _flash[i] > 0.0, _armored[i] == 1, hp_ratio(i), _time)
+				BossDraw.draw(self, type, _positions[i], _flash[i] > 0.0, _armored[i] == 1, hp_ratio(i), _time,
+						_aim_of(_positions[i]), i)
 				continue
 			var tint := StageModifiers.ELITE_TINT if _elite[i] == 1 else Color.WHITE
 			PixelArt.draw(self, type.sprite, _positions[i], Color.WHITE, _flash[i] > 0.0, false, 1.0, tint)

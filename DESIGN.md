@@ -172,6 +172,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **2026-10-13: Playtest 1** (owner and friends, v0.0.5): wanted other ships and shot patterns to try, more enemies and things to shoot (lean toward bullet hell, but readable), bigger power-up icons, and co-op scaling that adds enemies rather than HP. Done in the same session: four new ships (Lancer, Hornet, Vulcan, Wave) picked in the lobby, about 2x the air enemies and 1.5x the ground targets, drones that shoot, faster enemy guns, 13 px power-up badges, co-op scaling by wave size. Performance measured with `--perf-log`: the stutter seen while playtesting came from the PC running out of memory, not the game (about 53 MB, ~2 ms ticks).
 
 - **2026-10-14: Playtest 2** (owner and friends, v0.0.6): the ships are good; enemies should be 15–20% harder; the boss should be harder and bigger, with destructible parts like Jamestown; the HUD at the bottom was in the way. Done: one global difficulty knob (enemy HP x1.15, guns firing ~11% more often), the HUD moved to the top-left, and the Stage 1 boss rebuilt as the multi-part Fortress Gunship (armored core, required wing cannons, missile pods, hangar, lasers, desperation). The fast-boss goal is now 90 s.
+- **Playtest 3** (owner, v0.0.8): the Fortress Gunship fight played great; only its look needed work. The HP bar should be red, and power level and special charges should be icons, filled or empty, instead of text. Done: the boss keeps its design, hitboxes and attacks but is now pixel art (steel plating, seams, rivets, red trim, lights; turret barrels that track the nearest ship, blinking launch tubes, sliding hangar doors, armor plates over the core that open into a pulsing eye, smoke on damaged parts); the HUD's top-left block has a red HP bar (blinks below 30%), 5 power arrows, bomb or shield icons for charges (used ones hollow) and boost icons with timer bars, on a dark panel. Open: how Scrap is earned (100% kills and all ground targets aren't realistic any more on the busier stage).
 - **2026-10-14:** a "Boss only" mode in the lobby (host's switch) for testing bosses: every stage of the run starts just before its boss; the results, shop and summary still happen; it doesn't count toward the personal best.
 
 ## 8. Decisions log (why)
@@ -193,6 +194,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - Power orbs and boosts in co-op: whoever touches them, or shared?
 - Bosses 2–4: the ideas in §3 Bosses are only brainstormed.
 - HUD layout for 4 players on a full-width screen.
+- How Scrap is earned (playtest 3): the stage goals need rethinking now that 100% kills / all ground targets are out of reach.
 - Audio direction (synthwave, orchestral, chiptune...).
 - Whether to add 2D lighting.
 - The real name.

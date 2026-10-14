@@ -59,6 +59,8 @@ var bounds: Rect2 = Rect2(Vector2.ZERO, Vector2(ScreenFit.BASE))
 ## Specials.Kind equipped, and charges left this stage (host-owned).
 var special_kind: int = Specials.Kind.MEGA_BOMB
 var special_charges: int = 0
+## Charges at the start of the stage (the HUD shows used ones hollow).
+var special_max: int = 0
 ## Seconds until a downed ship comes back (host-owned; 0 while flying, or when
 ## the team is out of respawn credits).
 var respawn_left: float = 0.0
@@ -113,6 +115,7 @@ func setup(owner_peer_id: int, player_slot: int, ship: int, start: Vector2, area
 	special_kind = special if Specials.is_valid(special) else Specials.Kind.MEGA_BOMB
 	# Charges refill at the start of each stage (plus any bought in the shop).
 	special_charges = Specials.charges_of(special_kind) + carried.extra_charges
+	special_max = special_charges
 	state.position = start
 	position = start
 	_remote_target = start

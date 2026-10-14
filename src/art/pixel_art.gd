@@ -368,6 +368,46 @@ const SPRITES: Dictionary[String, Array] = {
 		"..kkMMMMMkk..",
 		"....kkkkk....",
 	],
+	# HUD icons (playtest 3): drawn filled for what you have, hollow for what
+	# you don't (texture(..., hollow = true)). Colored outlines, so they read on
+	# the HUD's dark panel. Power level: an arrow. 9x9
+	"hud_power": [
+		"....T....",
+		"...TtT...",
+		"..TtwtT..",
+		".TttwttT.",
+		"TTttwttTT",
+		"..TtwtT..",
+		"..TtttT..",
+		"..TtttT..",
+		"..TTTTT..",
+	],
+	# Mega Bomb charge. 9x10
+	"hud_bomb": [
+		"......y..",
+		".....oy..",
+		"....Lo...",
+		"..LLLLL..",
+		".MmmmmmM.",
+		"MmmwmmmmM",
+		"MmwmmmmmM",
+		"MmmmmmmmM",
+		".MmmmmmM.",
+		"..MMMMM..",
+	],
+	# Shield charge. 9x10
+	"hud_shield": [
+		"TTTTTTTTT",
+		"TtwtttttT",
+		"TtwtttttT",
+		"TtttttttT",
+		"TtttttttT",
+		".TtttttT.",
+		".TtttttT.",
+		"..TtttT..",
+		"...TtT...",
+		"....T....",
+	],
 	# Wingmen boost: a side drone. 5x7
 	"wingman": [
 		"..k..",
@@ -421,6 +461,8 @@ const SPRITES: Dictionary[String, Array] = {
 	],
 }
 
+## Outline color of hollow sprites (empty HUD slots).
+const HOLLOW: Color = Color(0.42, 0.44, 0.52)
 const TINT_CHAR: String = "P"
 const TINT_SHADE_CHAR: String = "p"
 
@@ -438,9 +480,10 @@ static func size_of(sprite: String) -> Vector2i:
 
 
 ## The sprite as a texture. `tint` recolors the P/p pixels; `flash` makes every
-## visible pixel white (hit flash).
-static func texture(sprite: String, tint: Color = Color.WHITE, flash: bool = false) -> ImageTexture:
-	var key := "%s|%s|%s" % [sprite, tint.to_html(), flash]
+## visible pixel white (hit flash); `hollow` keeps only the sprite's edge, in
+## gray (an empty HUD slot).
+static func texture(sprite: String, tint: Color = Color.WHITE, flash: bool = false, hollow: bool = false) -> ImageTexture:
+	var key := "%s|%s|%s|%s" % [sprite, tint.to_html(), flash, hollow]
 	if _cache.has(key):
 		return _cache[key]
 	var rows: Array = SPRITES[sprite]
@@ -459,10 +502,23 @@ static func texture(sprite: String, tint: Color = Color.WHITE, flash: bool = fal
 				color = PALETTE.get(ch, Color(0, 0, 0, 0))
 			if flash and color.a > 0.0:
 				color = Color.WHITE
+			if hollow:
+				color = HOLLOW if color.a > 0.0 and _on_edge(rows, x, y) else Color(0, 0, 0, 0)
 			image.set_pixel(x, y, color)
 	var built := ImageTexture.create_from_image(image)
 	_cache[key] = built
 	return built
+
+
+## Whether pixel (x, y) of a sprite touches a transparent pixel or the border.
+static func _on_edge(rows: Array, x: int, y: int) -> bool:
+	for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var at := Vector2i(x, y) + step
+		if at.y < 0 or at.y >= rows.size() or at.x < 0 or at.x >= String(rows[at.y]).length():
+			return true
+		if String(rows[at.y])[at.x] == ".":
+			return true
+	return false
 
 
 ## A filled circle (with an optional inner circle on top) baked into a small

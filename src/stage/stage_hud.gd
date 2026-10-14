@@ -1,7 +1,8 @@
 class_name StageHud
 extends CanvasLayer
-## Gray-box HUD: your HP bar, power level, special charges and boosts (top
-## left, so the bottom where the ships fly stays clear); teammates' names in their ship colors with small HP bars (top right);
+## Gray-box HUD: your red HP bar, power level (arrows), special charges (bomb or
+## shield icons; used ones hollow) and boosts (icon + timer bar) at the top
+## left, so the bottom where the ships fly stays clear; teammates' names in their ship colors with small HP bars (top right);
 ## kills, ground targets, the team's Scrap and respawn credits; a thin stage
 ## progress line that becomes the boss's HP bar; the auto-fire state; a center
 ## banner (stage name, boss warning, shot down, game over); the results panel
@@ -9,13 +10,24 @@ extends CanvasLayer
 ## the art pass (M6).
 
 const HP_BAR: Rect2 = Rect2(8, 29, 140, 6)
+## Top-left corner of the power arrows; special icons follow on the same row,
+## boosts go on the row below.
+const LOADOUT_AT: Vector2 = Vector2(8, 41)
+const ICON_STEP: float = 11.0
+const BOOST_AT: Vector2 = Vector2(8, 55)
+const BOOST_BAR_SIZE: Vector2 = Vector2(28, 3)
+const SPECIAL_ICONS: Array[String] = ["hud_bomb", "hud_shield"]
+const PANEL: Rect2 = Rect2(3, 15, 152, 56)
+const PANEL_COLOR: Color = Color(0.17, 0.18, 0.23, 0.85)
 const TEAM_BAR_SIZE: Vector2 = Vector2(60, 3)
 const PROGRESS_BAR: Rect2 = Rect2(330, 4, 300, 2)
 const BOSS_BAR: Rect2 = Rect2(230, 18, 500, 6)
 const BAR_BACK: Color = Color(0.05, 0.05, 0.08, 0.85)
 const BAR_EMPTY: Color = Color(0.25, 0.1, 0.12)
-const HP_COLOR: Color = Color(0.45, 0.9, 0.5)
-const HP_LOW_COLOR: Color = Color(0.95, 0.35, 0.3)
+const HP_COLOR: Color = Color(0.88, 0.2, 0.26)
+## Low HP: the bar blinks to this.
+const HP_LOW_COLOR: Color = Color(1.0, 0.55, 0.5)
+const HP_LOW: float = 0.3
 const PROGRESS_COLOR: Color = Color(0.6, 0.65, 0.8)
 const BOSS_COLOR: Color = Color(0.95, 0.3, 0.4)
 const BOOST_COLOR: Color = Color(1.0, 0.8, 0.4)
@@ -29,7 +41,6 @@ const TITLE_COLOR: Color = Color(0.95, 0.78, 0.4)
 @onready var _invite: Label = $Invite
 @onready var _banner: Label = $Banner
 @onready var _hp_label: Label = $HpLabel
-@onready var _loadout: Label = $Loadout
 @onready var _boss_label: Label = $BossLabel
 
 ## Names and slots last shown, so the player list is only rebuilt when it changes.
@@ -38,6 +49,8 @@ var _banner_left: float = 0.0
 var _bars: Control = null
 ## What the bars show (copied in show_state, drawn in _draw_bars).
 var _my_hp_ratio: float = 1.0
+## Your loadout (null = no ship of yours: nothing drawn).
+var _me: Ship = null
 var _team: Array[Ship] = []
 var _progress: float = 0.0
 var _boss_ratio: float = -1.0
@@ -54,6 +67,8 @@ func _ready() -> void:
 	_bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bars.draw.connect(_draw_bars)
 	add_child(_bars)
+	# Behind the labels (its panel sits under the HP text).
+	move_child(_bars, 0)
 	_build_results()
 	Net.invite.changed.connect(_show_invite)
 	_show_invite()
@@ -145,12 +160,7 @@ func show_state(stage: Stage, me: Ship) -> void:
 		if me.is_down():
 			hp_text = "DOWN - back in %.0f s" % ceilf(me.respawn_left) if me.respawn_left > 0.0 else "DOWN - no ships left: watching"
 		_set_text(_hp_label, hp_text)
-		var loadout := "Power %d/%d   %s x%d" % [me.state.power, ShipMotor.MAX_POWER, Specials.NAMES[me.special_kind], me.special_charges]
-		if me.state.rapid_fire_left > 0.0:
-			loadout += "   Rapid Fire %.0f" % ceilf(me.state.rapid_fire_left)
-		if me.state.wingmen_left > 0.0:
-			loadout += "   Wingmen %.0f" % ceilf(me.state.wingmen_left)
-		_set_text(_loadout, loadout)
+	_me = me
 	_progress = stage.progress()
 	var in_boss := stage.phase == Stage.Phase.BOSS
 	_boss_ratio = stage.boss_hp_ratio if in_boss else -1.0
@@ -189,7 +199,16 @@ func _show_players(ships: Array[Ship]) -> void:
 
 
 func _draw_bars() -> void:
-	_bar(HP_BAR, _my_hp_ratio, HP_LOW_COLOR if _my_hp_ratio < 0.3 else HP_COLOR)
+	# A backing panel, so icon outlines read over any ground.
+	if _me != null and is_instance_valid(_me):
+		var panel := PANEL
+		if _me.state.rapid_fire_left <= 0.0 and _me.state.wingmen_left <= 0.0:
+			panel.size.y -= 14.0  # No boost row.
+		_bars.draw_rect(panel, PANEL_COLOR)
+	var blink := _my_hp_ratio < HP_LOW and int(Time.get_ticks_msec() / 250.0) % 2 == 0
+	_bar(HP_BAR, _my_hp_ratio, HP_LOW_COLOR if blink else HP_COLOR)
+	if _me != null and is_instance_valid(_me):
+		_draw_loadout(_me)
 	if _boss_ratio >= 0.0:
 		_bar(BOSS_BAR, _boss_ratio, BOSS_COLOR)
 	else:
@@ -199,6 +218,29 @@ func _draw_bars() -> void:
 		for i: int in _team.size():
 			var at := Vector2(_players.position.x + _players.size.x - TEAM_BAR_SIZE.x, _players.position.y + 12.0 + i * 14.0)
 			_bar(Rect2(at, TEAM_BAR_SIZE), _team[i].health.ratio(), _team[i].tint())
+
+
+## Power arrows and special charges (filled = have, hollow = don't), then the
+## running boosts with how long they have left.
+func _draw_loadout(me: Ship) -> void:
+	var at := LOADOUT_AT
+	for i: int in ShipMotor.MAX_POWER:
+		_bars.draw_texture(PixelArt.texture("hud_power", Color.WHITE, false, i >= me.state.power), at)
+		at.x += ICON_STEP
+	at.x += 8.0
+	var icon := SPECIAL_ICONS[clampi(me.special_kind, 0, SPECIAL_ICONS.size() - 1)]
+	for i: int in maxi(me.special_max, me.special_charges):
+		_bars.draw_texture(PixelArt.texture(icon, Color.WHITE, false, i >= me.special_charges), at)
+		at.x += ICON_STEP
+	at = BOOST_AT
+	for boost: Array in [["pickup_rapid", me.state.rapid_fire_left, Color(0.95, 0.55, 0.17)],
+			["pickup_wingmen", me.state.wingmen_left, Color(0.45, 0.85, 0.5)]]:
+		var left: float = boost[1]
+		if left <= 0.0:
+			continue
+		_bars.draw_texture(PixelArt.texture(boost[0]), at)
+		_bar(Rect2(at + Vector2(16, 5), BOOST_BAR_SIZE), left / maxf(Pickups.BOOST_SECONDS, left), boost[2])
+		at.x += 16.0 + BOOST_BAR_SIZE.x + 8.0
 
 
 func _bar(rect: Rect2, ratio: float, color: Color) -> void:

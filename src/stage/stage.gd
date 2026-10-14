@@ -257,8 +257,10 @@ func tick(delta: float) -> void:
 		_spawn_due_waves()
 		if def.has_boss() and stage_time >= def.length and _next_wave >= _waves.size():
 			_start_boss()
+	var ship_points := _ship_positions(all_ships)
+	enemies.aim_targets = ship_points
 	enemies.tick(stage_time, delta)
-	ground.tick(stage_time, delta, _ship_positions(all_ships), _ground_hp_scale())
+	ground.tick(stage_time, delta, ship_points, _ground_hp_scale())
 	pickups.tick(stage_time, delta, _collectors(all_ships), is_host)
 	PerfLog.stop(&"enemies", t)
 	t = PerfLog.start()
