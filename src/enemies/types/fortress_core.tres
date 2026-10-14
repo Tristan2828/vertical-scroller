@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "fortress_core"
+display_name = "Fortress Gunship"
+max_hp = 3600
+radius = 30.0
+contact_damage = 25
+is_boss = true
+boss_path = 7
+size = Vector2(600, 56)
+body_color = Color(0.42, 0.45, 0.52, 1)
+bullet_damage = 14
+scrap = 60
+orb_chance = 1.0
+sprite = ""

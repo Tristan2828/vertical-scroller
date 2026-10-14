@@ -62,6 +62,10 @@ const START_CREDITS: int = 3
 const BOSS_START_Y: float = -40.0
 ## --weak-bosses: share of the boss's HP.
 const WEAK_BOSS_HP: float = 0.02
+## Below this share of its core's HP the boss sinks toward the players (desperation).
+const DESPERATION_HP: float = 0.3
+const DESPERATION_SINK: float = 90.0
+const DESPERATION_SPEED: float = 45.0
 ## The Mega Bomb's expanding ring.
 const MEGA_BOMB_COLOR: Color = Color(1.0, 0.95, 0.75)
 
@@ -92,9 +96,17 @@ var _end_left: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Host: the elite wave's index in _waves (Elite Wing), or -1.
 var _elite_wave: int = -1
-## Host: the boss's pool index, when it came, and its script.
+## Host: the boss core's pool index, when it came, and its script.
 var _boss_index: int = -1
 var _boss_started_at: float = 0.0
+## Host: the boss's parts (pool indices), the ones that keep the core armored,
+## all parts' HP at the start (for the HP bar), and whether it's sinking.
+var _boss_parts: PackedInt32Array = PackedInt32Array()
+var _required_parts: PackedInt32Array = PackedInt32Array()
+var _boss_total_hp: int = 1
+var _desperate: bool = false
+## Every peer: the core is open (no longer armored).
+var core_open: bool = false
 var _boss_max_hp: int = 1
 var _boss_brain: BossBrain = null
 ## Host: SPIN steps' current angles.
@@ -586,6 +598,17 @@ func _fire_guns() -> void:
 		var type := enemies.type_of(index)
 		var origin := enemies.position_of(index)
 		_fire_pattern(type.shot_pattern, origin, _aim_from(origin), type.bullet_damage)
+	for index: int in enemies.take_ready_launches(stage_time):
+		var launcher := enemies.type_of(index)
+		var launched := EnemyTypes.from_key(launcher.launches)
+		var shape := PathShapes.from_name(launcher.launch_shape)
+		if launched < 0 or shape < 0:
+			continue
+		var spawned := enemies.spawn(launched, shape as PathShapes.Id, stage_time, enemies.position_of(index), false,
+			1.0, _hp_scale())
+		if spawned >= 0:
+			stats.air_spawned += 1
+			_send_enemies(PackedInt32Array([spawned]))
 	for index: int in ground.take_ready_guns(stage_time):
 		var type := ground.type_of(index)
 		var origin := ground.position_of(index)
@@ -608,6 +631,8 @@ func _fire_pattern(pattern: int, origin: Vector2, aim: float, damage: int) -> vo
 func _spawn_pattern(pattern: int, origin: Vector2, aim: float, seed_value: int, damage: int, age: float) -> void:
 	if pattern < 0 or pattern >= ShotPatterns.Id.size() or ShotPatterns.is_ship_pattern(pattern):
 		return
+	if pattern == ShotPatterns.Id.LASER:
+		effects.warning(origin, aim, ShotPatterns.LASER_WARNING - age)
 	var bullets := ShotPatterns.build(pattern as ShotPatterns.Id, aim, seed_value)
 	for i: int in range(0, bullets.size(), ShotPatterns.STRIDE):
 		var offset := Vector2(bullets[i + 3], bullets[i + 4])
@@ -676,7 +701,7 @@ func _on_enemy_killed(index: int, at: Vector2, by_peer: int) -> void:
 		return
 	var type := enemies.type_of(index)
 	var scrap_scale := StageModifiers.ELITE_SCRAP if enemies.is_elite(index) else 1
-	if not type.is_boss:
+	if not type.is_boss and not type.boss_part:
 		stats.air_killed += 1
 	stats.kill_score += type.scrap * scrap_scale * StageGoals.SCORE_PER_SCRAP
 	if by_peer > 0:
@@ -738,13 +763,28 @@ func _start_boss() -> void:
 	_boss_started_at = stage_time
 	var hp_scale := (1.0 + BOSS_HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty * ENEMY_HP
 	hp_scale *= WEAK_BOSS_HP if LaunchOptions.weak_bosses else 1.0
-	_boss_index = enemies.spawn(def.boss_type, PathShapes.Id.BOSS, stage_time, Vector2(def.boss_x, BOSS_START_Y),
-		false, 1.0, hp_scale)
+	var path := EnemyTypes.ALL[def.boss_type].boss_path as PathShapes.Id
+	var origin := Vector2(def.boss_x, BOSS_START_Y)
+	_boss_index = enemies.spawn(def.boss_type, path, stage_time, origin, false, 1.0, hp_scale)
 	_boss_max_hp = maxi(enemies.hp_of(_boss_index), 1) if _boss_index >= 0 else 1
+	_boss_total_hp = _boss_max_hp
 	_boss_brain = BossBrain.new(def.boss_steps_one, def.boss_steps_two)
-	_show_boss_warning()
+	var spawned := PackedInt32Array([_boss_index])
+	# The parts fly the same path from their offsets, so they move with the core.
+	for part: StageDef.BossPartDef in def.boss_parts:
+		var index := enemies.spawn(part.type_id, path, stage_time, origin + part.offset, false, 1.0, hp_scale)
+		if index < 0:
+			continue
+		_boss_parts.append(index)
+		spawned.append(index)
+		_boss_total_hp += enemies.hp_of(index)
+		if part.required:
+			_required_parts.append(index)
+	core_open = _required_parts.is_empty()
 	if _boss_index >= 0:
-		_send_enemies(PackedInt32Array([_boss_index]))
+		enemies.set_armored(_boss_index, not core_open)
+	_show_boss_warning()
+	_send_enemies(spawned)
 
 
 func _show_boss_warning() -> void:
@@ -754,8 +794,27 @@ func _show_boss_warning() -> void:
 func _tick_boss(delta: float) -> void:
 	if phase != Phase.BOSS or _boss_index < 0 or not enemies.is_alive(_boss_index):
 		return
-	boss_hp_ratio = clampf(float(enemies.hp_of(_boss_index)) / _boss_max_hp, 0.0, 1.0)
-	var step := _boss_brain.tick(delta, boss_hp_ratio)
+	var left := enemies.hp_of(_boss_index)
+	for part: int in _boss_parts:
+		if enemies.is_alive(part):
+			left += enemies.hp_of(part)
+	boss_hp_ratio = clampf(float(left) / _boss_total_hp, 0.0, 1.0)
+	if not core_open:
+		for part: int in _required_parts:
+			if enemies.is_alive(part):
+				return  # The core stays armored and quiet until every required part is gone.
+		core_open = true
+		enemies.set_armored(_boss_index, false)
+		_show_core_open()
+	var core_ratio := clampf(float(enemies.hp_of(_boss_index)) / _boss_max_hp, 0.0, 1.0)
+	if not _desperate and core_ratio < DESPERATION_HP:
+		_desperate = true
+		# Everything still standing sinks toward the players together.
+		for index: int in PackedInt32Array([_boss_index]) + _boss_parts:
+			if enemies.is_alive(index):
+				var at := enemies.position_of(index)
+				_redirect(index, at, at + Vector2(0.0, DESPERATION_SINK), DESPERATION_SPEED, false)
+	var step := _boss_brain.tick(delta, core_ratio)
 	if step == null:
 		return
 	var origin := enemies.position_of(_boss_index) + step.offset
@@ -774,9 +833,17 @@ func _tick_boss(delta: float) -> void:
 			_fire_pattern(step.pattern, origin, angle, damage)
 
 
+func _show_core_open() -> void:
+	hud.show_banner("The core is open!", 2.0)
+
+
 func _on_boss_defeated(at: Vector2) -> void:
 	boss_hp_ratio = 0.0
 	stats.boss_seconds = stage_time - _boss_started_at
+	# Whatever's left of the boss goes down with the core (and drops its loot).
+	for part: int in _boss_parts:
+		if enemies.is_alive(part):
+			enemies.damage(part, enemies.hp_of(part), 0)
 	effects.chain(at, Vector2(30, 16), 10, _rng)
 	enemy_bullets.clear()
 	_end(Phase.CLEAR)
@@ -886,9 +953,17 @@ func _send_snapshot() -> void:
 		max_hp.append(ship.health.max_hp)
 		flags.append((1 if ship.state.focused else 0) | (2 if ship.health.is_invulnerable() else 0))
 		extras.append_array(pack_ship_extra(ship))
-	var team := PackedInt32Array([kills, ground_kills, team_scrap, credits, phase])
+	var team := PackedInt32Array([kills, ground_kills, team_scrap, credits, phase, 1 if core_open else 0])
+	var boss_ids := PackedInt32Array()
+	var boss_ratios := PackedByteArray()
+	if phase == Phase.BOSS:
+		for index: int in _boss_parts:
+			if enemies.is_alive(index):
+				boss_ids.append(index)
+				boss_ratios.append(roundi(enemies.hp_ratio(index) * 255.0))
 	for peer_id: int in _ready_peers:
-		_receive_snapshot.rpc_id(peer_id, stage_time, team, boss_hp_ratio, ids, positions, acks, hp, max_hp, flags, extras)
+		_receive_snapshot.rpc_id(peer_id, stage_time, team, boss_hp_ratio, ids, positions, acks, hp, max_hp, flags, extras,
+			_boss_index, boss_ids, boss_ratios)
 
 
 ## Client -> host, once, when this client's stage has loaded.
@@ -912,9 +987,10 @@ func _notify_ready() -> void:
 @rpc("authority", "call_remote", "unreliable_ordered", 1)
 func _receive_snapshot(host_time: float, team: PackedInt32Array, host_boss_hp: float, ids: PackedInt32Array,
 		positions: PackedVector2Array, acks: PackedInt32Array, hp: PackedInt32Array, max_hp: PackedInt32Array,
-		flags: PackedByteArray, extras: PackedByteArray) -> void:
+		flags: PackedByteArray, extras: PackedByteArray, boss_core: int, boss_ids: PackedInt32Array,
+		boss_ratios: PackedByteArray) -> void:
 	_sync_clock(host_time)
-	if team.size() >= 5:
+	if team.size() >= 6:
 		kills = team[0]
 		ground_kills = team[1]
 		team_scrap = team[2]
@@ -922,6 +998,14 @@ func _receive_snapshot(host_time: float, team: PackedInt32Array, host_boss_hp: f
 		if team[4] == Phase.BOSS and phase == Phase.PLAYING:
 			phase = Phase.BOSS
 			_show_boss_warning()
+		if phase == Phase.BOSS and boss_core >= 0 and boss_core < EnemyManager.CAPACITY:
+			var open := team[5] == 1
+			if open and not core_open:
+				_show_core_open()
+			core_open = open
+			enemies.set_armored(boss_core, not open)
+	for b: int in mini(boss_ids.size(), boss_ratios.size()):
+		enemies.show_hp_ratio(boss_ids[b], boss_ratios[b] / 255.0)
 	boss_hp_ratio = host_boss_hp
 	var n := ids.size()
 	for array_size: int in [positions.size(), acks.size(), hp.size(), max_hp.size(), flags.size(), extras.size() / 6]:

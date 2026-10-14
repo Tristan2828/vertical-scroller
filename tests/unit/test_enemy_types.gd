@@ -16,6 +16,10 @@ func test_air_enemies_have_sprites_and_ground_objects_have_a_size() -> void:
 		if type.ground:
 			assert_gt(type.size.x, 0.0, type.key)
 			assert_eq(type.homing, EnemyType.Homing.NONE, "%s: ground objects don't fly" % type.key)
+		elif type.sprite.is_empty():
+			# Boss cores and parts are drawn as shapes (BossDraw) at their size.
+			assert_true(type.is_boss or type.boss_part, "%s needs a sprite" % type.key)
+			assert_gt(type.size.x, 0.0, type.key)
 		else:
 			assert_true(PixelArt.has_sprite(type.sprite), "%s has sprite %s" % [type.key, type.sprite])
 

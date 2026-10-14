@@ -12,11 +12,11 @@ const NAMES: Array[String] = [
 	"Destroy every enemy",
 	"Nobody takes damage",
 	"Destroy every ground target",
-	"Beat the boss in under 60 s",
+	"Beat the boss in under 90 s",
 	"Beat the stage's twist",
 ]
 const REWARDS: Array[int] = [30, 60, 50, 50, 40, StageModifiers.BONUS_SCRAP]
-const FAST_BOSS_SECONDS: float = 60.0
+const FAST_BOSS_SECONDS: float = 90.0
 ## Unused special charges pay out at the end of a stage (DESIGN.md §3 Specials).
 const CHARGE_PAYOUT: int = 15
 ## Score: per point of Scrap a kill is worth, per goal met, for the boss.

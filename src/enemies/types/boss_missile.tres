@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "boss_missile"
+display_name = "Homing missile"
+max_hp = 12
+radius = 5.0
+sprite = "boss_missile"
+contact_damage = 12
+dies_on_contact = true
+homing = 1
+homing_delay = 0.4
+homing_speed = 230.0
+scrap = 0

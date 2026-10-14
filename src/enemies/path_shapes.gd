@@ -9,9 +9,9 @@ extends RefCounted
 ## Ids are sent over the network: only add new shapes at the end. NAMES are
 ## what stage files call them, in Id order.
 
-enum Id { S_CURVE, STRAIGHT, DIVE_RETREAT, CIRCLE_STRAFE, CROSS_SCREEN, HOVER_LEAVE, BOSS }
+enum Id { S_CURVE, STRAIGHT, DIVE_RETREAT, CIRCLE_STRAFE, CROSS_SCREEN, HOVER_LEAVE, BOSS, BOSS_WIDE }
 
-const NAMES: Array[String] = ["s_curve", "straight", "dive_retreat", "circle_strafe", "cross_screen", "hover_leave", "boss"]
+const NAMES: Array[String] = ["s_curve", "straight", "dive_retreat", "circle_strafe", "cross_screen", "hover_leave", "boss", "boss_wide"]
 
 ## S_CURVE: down the screen, swaying left and right.
 const S_CURVE_SPEED: float = 90.0
@@ -45,6 +45,9 @@ const BOSS_ARRIVE_SECONDS: float = 3.0
 const BOSS_SWAY_WIDTH: float = 220.0
 const BOSS_SWAY_RATE: float = 0.45
 const BOSS_BOB: float = 20.0
+## BOSS_WIDE: the same for a screen-wide boss, swaying much less.
+const BOSS_WIDE_SWAY: float = 70.0
+const BOSS_WIDE_BOB: float = 10.0
 
 
 static func from_name(shape_name: String) -> int:
@@ -86,11 +89,13 @@ static func position(shape: Id, age: float, origin: Vector2, mirror: bool = fals
 			var sway := side * HOVER_SWAY * sin(maxf(age - HOVER_ARRIVE_SECONDS, 0.0) * 1.2)
 			var rise := LEAVE_SPEED * maxf(age - HOVER_LEAVE_AT, 0.0)
 			return origin + Vector2(sway, depth - rise)
-		Id.BOSS:
+		Id.BOSS, Id.BOSS_WIDE:
+			var width := BOSS_SWAY_WIDTH if shape == Id.BOSS else BOSS_WIDE_SWAY
+			var bob := BOSS_BOB if shape == Id.BOSS else BOSS_WIDE_BOB
 			var arrived := origin + Vector2(0.0, BOSS_DEPTH * _ease_out(age / BOSS_ARRIVE_SECONDS))
 			var t := maxf(age - BOSS_ARRIVE_SECONDS, 0.0)
 			# Starts swaying from rest (sin(0) = 0), so there's no jump on arrival.
-			return arrived + Vector2(side * BOSS_SWAY_WIDTH * sin(t * BOSS_SWAY_RATE), BOSS_BOB * sin(t * BOSS_SWAY_RATE * 2.0))
+			return arrived + Vector2(side * width * sin(t * BOSS_SWAY_RATE), bob * sin(t * BOSS_SWAY_RATE * 2.0))
 	return origin
 
 

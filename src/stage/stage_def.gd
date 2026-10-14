@@ -10,6 +10,7 @@ extends RefCounted
 ##   wave <time> <enemy> <shape> [x=480] [y=-16] [count=1] [spacing=0.4] [dx=0] [pace=1] [mirror] [variant=a1]
 ##   ground <time> <type> x=<x> [mirror]
 ##   boss <type> [x=480]
+##   boss_part <type> dx=<x> dy=<y> [required]
 ##   boss_step <phase 1|2> <pattern> [aim=nearest|each|fixed|spin] [angle=90] [wait=1] [dx=0] [dy=0]
 ##
 ## wave: `count` enemies of type <enemy> (EnemyType.key) fly path <shape>
@@ -26,6 +27,11 @@ extends RefCounted
 ## A step fires <pattern> (ShotPatterns.NAMES) from the boss (+dx, dy), aimed
 ## at the nearest ship, at each ship, at a fixed angle (degrees: 90 = down),
 ## or spinning further each time, then waits `wait` seconds.
+## boss_part: a destructible part (EnemyType.boss_part) that flies with the
+## boss at (dx, dy) from its core and fires or launches on its own. The core is
+## armored (takes no damage, runs no script) until every `required` part is
+## destroyed; the other parts are optional. Below 30% of the core's HP the boss
+## sinks toward the players (desperation).
 
 ## Every peer reads the same file, so these ids match everywhere.
 class WaveDef:
@@ -42,6 +48,13 @@ class WaveDef:
 	## "" = always flown.
 	var variant_group: String = ""
 	var variant_option: String = ""
+
+
+class BossPartDef:
+	extends RefCounted
+	var type_id: int = 0
+	var offset: Vector2 = Vector2.ZERO
+	var required: bool = false
 
 
 class GroundDef:
@@ -64,6 +77,7 @@ var boss_type: int = -1
 var boss_x: float = 480.0
 var boss_steps_one: Array[BossStep] = []
 var boss_steps_two: Array[BossStep] = []
+var boss_parts: Array[BossPartDef] = []
 ## "line 12: unknown enemy 'dron'" (empty when the file is fine).
 var errors: PackedStringArray = PackedStringArray()
 
@@ -85,7 +99,7 @@ static func parse(text: String) -> StageDef:
 			continue
 		if line.contains("="):
 			var first_word := line.get_slice(" ", 0)
-			if not first_word in ["wave", "ground", "boss", "boss_step"]:
+			if not first_word in ["wave", "ground", "boss", "boss_step", "boss_part"]:
 				def._parse_setting(number, line)
 				continue
 		var words := line.split(" ", false)
@@ -98,6 +112,8 @@ static func parse(text: String) -> StageDef:
 				def._parse_boss(number, words)
 			"boss_step":
 				def._parse_boss_step(number, words)
+			"boss_part":
+				def._parse_boss_part(number, words)
 			_:
 				def.errors.append("line %d: don't know '%s'" % [number, words[0]])
 	return def
@@ -169,7 +185,8 @@ func _parse_wave(number: int, words: PackedStringArray) -> void:
 	var wave := WaveDef.new()
 	wave.time = _number(number, "time", words[1])
 	wave.type_id = EnemyTypes.from_key(words[2])
-	if wave.type_id < 0 or EnemyTypes.ALL[wave.type_id].ground or EnemyTypes.ALL[wave.type_id].is_boss:
+	if wave.type_id < 0 or EnemyTypes.ALL[wave.type_id].ground or EnemyTypes.ALL[wave.type_id].is_boss \
+			or EnemyTypes.ALL[wave.type_id].boss_part:
 		errors.append("line %d: unknown air enemy '%s'" % [number, words[2]])
 		return
 	wave.shape = PathShapes.from_name(words[3])
@@ -245,6 +262,28 @@ func _parse_boss(number: int, words: PackedStringArray) -> void:
 			boss_x = _number(number, "x", words[i].trim_prefix("x="))
 		else:
 			errors.append("line %d: unknown boss option '%s'" % [number, words[i]])
+
+
+func _parse_boss_part(number: int, words: PackedStringArray) -> void:
+	if words.size() < 2:
+		errors.append("line %d: a boss_part needs a part type" % number)
+		return
+	var part := BossPartDef.new()
+	part.type_id = EnemyTypes.from_key(words[1])
+	if part.type_id < 0 or not EnemyTypes.ALL[part.type_id].boss_part:
+		errors.append("line %d: unknown boss part '%s'" % [number, words[1]])
+		return
+	for i: int in range(2, words.size()):
+		var word := words[i]
+		if word == "required":
+			part.required = true
+		elif word.begins_with("dx="):
+			part.offset.x = _number(number, "dx", word.trim_prefix("dx="))
+		elif word.begins_with("dy="):
+			part.offset.y = _number(number, "dy", word.trim_prefix("dy="))
+		else:
+			errors.append("line %d: unknown boss_part option '%s'" % [number, word])
+	boss_parts.append(part)
 
 
 func _parse_boss_step(number: int, words: PackedStringArray) -> void:

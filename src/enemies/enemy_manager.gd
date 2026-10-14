@@ -63,6 +63,15 @@ var _next_homing: PackedFloat32Array = PackedFloat32Array()
 var _leaving: PackedByteArray = PackedByteArray()
 ## Elite Wing modifier: tougher, faster-shooting, gold enemies.
 var _elite: PackedByteArray = PackedByteArray()
+## Bosses: an armored core takes no damage (bullets still hit and vanish).
+var _armored: PackedByteArray = PackedByteArray()
+## HP at spawn (host), for boss part HP bars.
+var _max_hp: PackedInt32Array = PackedInt32Array()
+## Clients: boss part HP (0..1) from host snapshots (clients don't know enemy HP).
+var _shown_ratio: PackedFloat32Array = PackedFloat32Array()
+## Host: stage time of the next launch (missile pods, hangars).
+var _next_launch: PackedFloat32Array = PackedFloat32Array()
+var _time: float = 0.0
 ## Explosions: x, y, age.
 var _explosions: Array[Vector3] = []
 ## Pool indices of the enemies alive this tick (rebuilt by tick()), so bullets
@@ -92,6 +101,10 @@ func _init() -> void:
 	_next_homing.resize(CAPACITY)
 	_leaving.resize(CAPACITY)
 	_elite.resize(CAPACITY)
+	_armored.resize(CAPACITY)
+	_max_hp.resize(CAPACITY)
+	_shown_ratio.resize(CAPACITY)
+	_next_launch.resize(CAPACITY)
 
 
 ## Host: adds an enemy that appears at `spawn_time` (may be in the future).
@@ -103,6 +116,7 @@ func spawn(type_id: int, shape: PathShapes.Id, spawn_time: float, origin: Vector
 			spawn_at(i, type_id, shape, spawn_time, origin, mirror, pace, elite)
 			var scale := hp_scale * (StageModifiers.ELITE_HP if elite else 1.0)
 			_hp[i] = maxi(roundi(EnemyTypes.ALL[type_id].max_hp * scale), 1)
+			_max_hp[i] = _hp[i]
 			return i
 	return -1
 
@@ -129,6 +143,10 @@ func spawn_at(index: int, type_id: int, shape: PathShapes.Id, spawn_time: float,
 	_next_homing[index] = spawn_time + type.homing_delay
 	_leaving[index] = 0
 	_elite[index] = 1 if elite else 0
+	_armored[index] = 0
+	_max_hp[index] = type.max_hp
+	_shown_ratio[index] = 1.0
+	_next_launch[index] = spawn_time + type.first_shot_delay + type.launch_interval * 0.5
 
 
 ## From `time` on, enemy `index` flies straight from `origin` toward `target`.
@@ -226,6 +244,7 @@ func apply_records(data: Array) -> void:
 ## Moves every enemy to where its path puts it at `stage_time`; removes the ones
 ## that flew off screen.
 func tick(stage_time: float, delta: float) -> void:
+	_time = stage_time
 	var leave_area := play_area.grow(LEAVE_MARGIN)
 	_live.clear()
 	for i: int in CAPACITY:
@@ -265,6 +284,41 @@ func take_ready_guns(stage_time: float) -> PackedInt32Array:
 		if y >= FIRE_TOP and y <= FIRE_BOTTOM and play_area.has_point(_positions[i]):
 			ready.append(i)
 	return ready
+
+
+## Host: boss parts whose launcher is ready now (and resets their timers).
+func take_ready_launches(stage_time: float) -> PackedInt32Array:
+	var ready := PackedInt32Array()
+	for i: int in _live:
+		if not is_alive(i) or stage_time < _next_launch[i]:
+			continue
+		var type := EnemyTypes.ALL[_types[i]]
+		if type.launches.is_empty():
+			continue
+		_next_launch[i] = stage_time + type.launch_interval * fire_interval_scale
+		ready.append(i)
+	return ready
+
+
+func set_armored(index: int, armored: bool) -> void:
+	_armored[index] = 1 if armored else 0
+
+
+func is_armored(index: int) -> bool:
+	return _armored[index] == 1
+
+
+## HP left, 0..1 (host: real HP; clients: the host's last snapshot).
+func hp_ratio(index: int) -> float:
+	if multiplayer.is_server():
+		return clampf(float(_hp[index]) / maxf(_max_hp[index], 1.0), 0.0, 1.0)
+	return _shown_ratio[index]
+
+
+## Clients: a boss part's HP from a host snapshot.
+func show_hp_ratio(index: int, ratio: float) -> void:
+	if index >= 0 and index < CAPACITY:
+		_shown_ratio[index] = ratio
 
 
 ## Host: homing enemies due for a decision now; the next one is `every` seconds later.
@@ -351,6 +405,9 @@ func find_hit_on_path(from: Vector2, to: Vector2, bullet_radius: float, ignore: 
 func damage(index: int, amount: int, by_peer: int = 1) -> bool:
 	if not is_alive(index):
 		return false
+	if _armored[index] == 1:
+		_flash[index] = FLASH_SECONDS
+		return false
 	damage_by_peer[by_peer] = damage_by_peer.get(by_peer, 0) + mini(amount, _hp[index])
 	_hp[index] -= amount
 	_flash[index] = FLASH_SECONDS
@@ -389,7 +446,11 @@ func _remove(index: int, by_peer: int) -> void:
 func _draw() -> void:
 	for i: int in CAPACITY:
 		if is_alive(i):
+			var type := EnemyTypes.ALL[_types[i]]
+			if type.sprite.is_empty():
+				BossDraw.draw(self, type, _positions[i], _flash[i] > 0.0, _armored[i] == 1, hp_ratio(i), _time)
+				continue
 			var tint := StageModifiers.ELITE_TINT if _elite[i] == 1 else Color.WHITE
-			PixelArt.draw(self, EnemyTypes.ALL[_types[i]].sprite, _positions[i], Color.WHITE, _flash[i] > 0.0, false, 1.0, tint)
+			PixelArt.draw(self, type.sprite, _positions[i], Color.WHITE, _flash[i] > 0.0, false, 1.0, tint)
 	for explosion: Vector3 in _explosions:
 		Explosions.draw(self, Vector2(explosion.x, explosion.y), explosion.z / EXPLOSION_SECONDS, 1.0)

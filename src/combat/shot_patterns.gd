@@ -19,6 +19,7 @@ enum Id {
 	AIMED, AIMED_FAN_3, AIMED_FAN_5, BURST_3, RING_12, DOWN_SPREAD_3,
 	RING_24, SPIRAL, AIMED_LINE_5, SPRAY,
 	PARALLEL_WIDE, PARALLEL_TIGHT, VULCAN_SWEEP, WAVE_ARC,
+	LASER,
 }
 
 ## What stage files call them (boss_step lines), in Id order.
@@ -27,6 +28,7 @@ const NAMES: Array[String] = [
 	"aimed", "aimed_fan_3", "aimed_fan_5", "burst_3", "ring_12", "down_spread_3",
 	"ring_24", "spiral", "aimed_line_5", "spray",
 	"parallel_wide", "parallel_tight", "vulcan_sweep", "wave_arc",
+	"laser",
 ]
 ## The patterns ships fire (the rest are enemy patterns).
 const SHIP_PATTERNS: Array[Id] = [Id.SHIP_SPREAD, Id.SHIP_FOCUS, Id.PARALLEL_WIDE, Id.PARALLEL_TIGHT,
@@ -52,6 +54,13 @@ const SWEEP_DEGREES: float = 9.0
 const SWEEP_RATE: float = 0.2
 ## WAVE_ARC: half the arc's width.
 const ARC_DEGREES: float = 35.0
+## LASER: a warning line for LASER_WARNING seconds (EffectsLayer.warning), then a
+## beam: a fast line of bullets along the aim. The only fast enemy pattern; the
+## warning keeps it readable.
+const LASER_WARNING: float = 1.0
+const LASER_BULLETS: int = 28
+const LASER_SPEED: float = 420.0
+const LASER_GAP: float = 0.035
 
 
 ## A seed both the host and the shooting client can compute on their own.
@@ -109,6 +118,9 @@ static func build(pattern: Id, aim: float, seed_value: int, count: int = 0, base
 			for i: int in bullets:
 				var t := float(i) / (bullets - 1) * 2.0 - 1.0
 				_add(out, aim + t * deg_to_rad(ARC_DEGREES), base_speed, 0.0)
+		Id.LASER:
+			for i: int in LASER_BULLETS:
+				_add(out, aim, LASER_SPEED, LASER_WARNING + i * LASER_GAP)
 		Id.AIMED:
 			_add(out, aim, MEDIUM, 0.0)
 		Id.AIMED_FAN_3:

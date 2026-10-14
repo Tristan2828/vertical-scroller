@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://src/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+key = "hangar"
+display_name = "Drone hangar"
+max_hp = 900
+radius = 22.0
+contact_damage = 15
+boss_part = true
+size = Vector2(76, 30)
+body_color = Color(0.36, 0.4, 0.46, 1)
+launches = "drone"
+launch_interval = 3.2
+launch_shape = "s_curve"
+scrap = 12
+charge_chance = 0.5
+sprite = ""

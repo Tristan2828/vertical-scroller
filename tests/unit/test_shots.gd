@@ -60,8 +60,8 @@ func test_enemy_not_yet_appeared_cannot_be_hit() -> void:
 
 func test_enemy_patterns_are_slow_and_readable() -> void:
 	for pattern: int in ShotPatterns.Id.size():
-		if ShotPatterns.is_ship_pattern(pattern):
-			continue
+		if ShotPatterns.is_ship_pattern(pattern) or pattern == ShotPatterns.Id.LASER:
+			continue  # The laser is fast, but comes after a warning line.
 		var bullets := ShotPatterns.build(pattern as ShotPatterns.Id, PI / 2.0, 7)
 		assert_gt(bullets.size(), 0, "pattern %d fires something" % pattern)
 		for i: int in range(0, bullets.size(), ShotPatterns.STRIDE):

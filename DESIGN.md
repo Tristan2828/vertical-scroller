@@ -121,7 +121,10 @@ The story escalates: hit the planet base, then the shipyard building the fleet, 
 
 ### Bosses
 - Every stage ends in a boss; the final stage is a bigger multi-phase boss (the flagship's core).
-- Bosses run attack scripts (steps of patterns and movement), like Medieval Survival's `BossBrain` / `BossStep`. Draft: destructible parts (turrets on the boss) that weaken it when shot off.
+- Bosses run attack scripts (steps of patterns and movement), like Medieval Survival's `BossBrain` / `BossStep`.
+- **Bosses are made of parts (playtest 2, Jamestown-style):** big bosses (about ¾ of the screen wide) whose parts (wing cannons, missile pods, hangars...) each have their own HP and gun or launcher. The **core is armored until the required parts are destroyed**, so a bigger boss means more to strip, not a faster kill; optional parts keep pouring out enemies until destroyed. Below 30% core HP the boss enters a **desperation** phase (it sinks toward the players and its script speeds up). Telegraphed lasers (a warning line, then a beam) are the only fast enemy bullets. All of this is stage-file data (`boss`, `boss_part`, `boss_step` lines).
+- **Stage 1: Fortress Gunship** (built): a 600 px hull; 2 required wing cannons (aimed fans), 2 missile pods (shootable homing missiles), a drone hangar; the open core fires spirals, rings and lasers.
+- Ideas for the others (brainstormed in playtest 2, not built): **Stage 2: Construction Crane** (arms that sweep across the screen as hazards, welding-torch lasers, a drone hangar, the control cab as the core). **Stage 3: the capital ship itself** (the scroll continues over its hull: broadside turret rows, 3 shield generators guarding the bridge). **Stage 4: Reactor** (a rotating armored ring with gaps, laser sweeps, a core that changes phase as rings break, an escape run).
 
 ## 4. Progression
 
@@ -168,6 +171,8 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 
 - **2026-10-13: Playtest 1** (owner and friends, v0.0.5): wanted other ships and shot patterns to try, more enemies and things to shoot (lean toward bullet hell, but readable), bigger power-up icons, and co-op scaling that adds enemies rather than HP. Done in the same session: four new ships (Lancer, Hornet, Vulcan, Wave) picked in the lobby, about 2x the air enemies and 1.5x the ground targets, drones that shoot, faster enemy guns, 13 px power-up badges, co-op scaling by wave size. Performance measured with `--perf-log`: the stutter seen while playtesting came from the PC running out of memory, not the game (about 53 MB, ~2 ms ticks).
 
+- **2026-10-14: Playtest 2** (owner and friends, v0.0.6): the ships are good; enemies should be 15–20% harder; the boss should be harder and bigger, with destructible parts like Jamestown; the HUD at the bottom was in the way. Done: one global difficulty knob (enemy HP x1.15, guns firing ~11% more often), the HUD moved to the top-left, and the Stage 1 boss rebuilt as the multi-part Fortress Gunship (armored core, required wing cannons, missile pods, hangar, lasers, desperation). The fast-boss goal is now 90 s.
+
 ## 8. Decisions log (why)
 - **Pixel art over hi-res 2D or low-poly 3D:** it reuses the owner's gamekit pipeline, Claude can draw and edit it, and asset packs mix well under one palette. 3D (with Kenney/Quaternius CC0 kits) was the closest look to Sky Force, but it's the biggest effort and a second engine to learn.
 - **960x540 over 640x360:** a full-width vertical scroller needs vertical room; 360 px was too short. The cost is the 1440p scaling (solved by the Sharp/Pixel-perfect setting) and more pixels to draw per asset.
@@ -177,6 +182,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **Respawn with a shared pool instead of revive-by-hovering:** a downed ship in a scroller would drift off-screen or block a lane.
 - **Co-op scaling by wave size (playtest 1, replaces "partial HP scaling"):** the first playtest wanted more on screen, so extra players now bring more enemies rather than tougher ones; a small HP bump keeps waves from melting, and the boss scales by HP because it's one enemy.
 - **Five ships unlocked for testing (playtest 1, replaces "start with 1 ship"):** the testers wanted to try different guns early.
+- **Bosses made of parts with an armored core (playtest 2):** the testers wanted a bigger, harder boss; an armored core means size adds parts to destroy instead of making the boss easier to hit, and parts give the team choices (which part first, who takes which side).
 - **Busier screen (playtest 1, replaces "Sky Force-level density"):** the first stage felt empty; the screen fills up, but enemy bullets stay slow and readable.
 - **Scripted paths:** the genre's own approach; learnable; the cheapest and smoothest netcode.
 
@@ -184,7 +190,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - Exact numbers: HP, damage, power levels, charges, prices, respawn credits, HP scaling (all marked draft).
 - What happens to a player who goes down with no respawn credits left (spectate until the next stage?).
 - Power orbs and boosts in co-op: whoever touches them, or shared?
-- Boss designs for each stage.
+- Bosses 2–4: the ideas in §3 Bosses are only brainstormed.
 - HUD layout for 4 players on a full-width screen.
 - Audio direction (synthwave, orchestral, chiptune...).
 - Whether to add 2D lighting.

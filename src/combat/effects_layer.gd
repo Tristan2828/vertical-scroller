@@ -7,6 +7,10 @@ extends Node2D
 const RING_SECONDS: float = 0.6
 const BLAST_SECONDS: float = 0.5
 const RING_WIDTH: float = 3.0
+const WARNING_COLOR: Color = Color(1.0, 0.25, 0.4)
+const WARNING_LENGTH: float = 1200.0
+## Warning lines (lasers): x, y, angle, seconds left.
+var _warnings: Array[Vector4] = []
 ## Explosions: x, y, age (negative = waiting to go off), size.
 var _blasts: Array[Vector4] = []
 ## Rings: x, y, age, max radius.
@@ -18,6 +22,12 @@ var _ring_colors: Array[Color] = []
 func ring(center: Vector2, radius: float, color: Color) -> void:
 	_rings.append(Vector4(center.x, center.y, 0.0, radius))
 	_ring_colors.append(color)
+
+
+## A blinking line along `angle` from `origin` for `seconds` (a laser is coming).
+func warning(origin: Vector2, angle: float, seconds: float) -> void:
+	if seconds > 0.0:
+		_warnings.append(Vector4(origin.x, origin.y, angle, seconds))
 
 
 ## An explosion of `size` (1 = a small enemy) after `delay` seconds.
@@ -34,6 +44,13 @@ func chain(center: Vector2, spread: Vector2, count: int, rng: RandomNumberGenera
 
 
 func _process(delta: float) -> void:
+	var w := 0
+	while w < _warnings.size():
+		_warnings[w].w -= delta
+		if _warnings[w].w <= 0.0:
+			_warnings.remove_at(w)
+		else:
+			w += 1
 	var i := 0
 	while i < _blasts.size():
 		_blasts[i].z += delta
@@ -53,6 +70,11 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	for warn: Vector4 in _warnings:
+		# Blinks faster as the beam gets close.
+		if int(warn.w * (6.0 if warn.w > 0.4 else 14.0)) % 2 == 0:
+			var from := Vector2(warn.x, warn.y)
+			draw_line(from, from + Vector2.from_angle(warn.z) * WARNING_LENGTH, WARNING_COLOR, 1.0)
 	for i: int in _rings.size():
 		var r := _rings[i]
 		var t := r.z / RING_SECONDS

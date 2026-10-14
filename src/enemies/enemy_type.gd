@@ -35,9 +35,19 @@ enum Homing {
 ## Pixels per second while homing.
 @export var homing_speed: float = 200.0
 
-## Bosses: the stage's last enemy, driven by the stage file's boss script
-## (BossBrain) instead of a gun timer; the HUD shows its HP bar.
+## Bosses: the stage's last enemy (its core), driven by the stage file's boss
+## script (BossBrain) instead of a gun timer; the HUD shows its HP bar.
 @export var is_boss: bool = false
+## A destructible part of a boss (wing cannon, missile pod, hangar): flies with
+## the boss core from an offset, has its own HP and gun or launcher.
+@export var boss_part: bool = false
+## Bosses: the path the boss flies (PathShapes.Id; big bosses sway less).
+@export var boss_path: int = 6
+## Launches an enemy of this key every `launch_interval` seconds (missile pods,
+## hangars), flying `launch_shape` (a PathShapes name).
+@export var launches: String = ""
+@export var launch_interval: float = 3.0
+@export var launch_shape: String = "straight"
 
 @export_group("Drops")
 ## Scrap dropped on death (split into pieces), and the chance (0..1) of each

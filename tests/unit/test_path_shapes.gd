@@ -63,7 +63,7 @@ func test_every_shape_starts_at_its_origin_and_moves_smoothly() -> void:
 func test_every_shape_eventually_leaves_the_screen() -> void:
 	var area := Rect2(0, 0, 960, 540).grow(EnemyManager.LEAVE_MARGIN)
 	for shape: int in PathShapes.Id.size():
-		if shape == PathShapes.Id.BOSS:
+		if shape == PathShapes.Id.BOSS or shape == PathShapes.Id.BOSS_WIDE:
 			continue  # Bosses stay until they're beaten.
 		var origin := Vector2(-20, 100) if shape == PathShapes.Id.CROSS_SCREEN else ORIGIN
 		var gone := not area.has_point(PathShapes.position(shape as PathShapes.Id, 30.0, origin))

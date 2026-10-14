@@ -43,16 +43,18 @@ func _ticks(count: int) -> void:
 
 
 ## Fires and steers like a player aiming: under the lowest air enemy, or else
-## under a standing ground target.
+## under a standing ground target. Every other 4 seconds it goes for ground
+## targets first (the stage has so many air enemies that it would never get to them).
 func _hunt(ticks: int) -> void:
 	var ship := stage.local_ship()
 	ship.test_input = _firing()
 	for i: int in ticks:
 		var target_x := ship.state.position.x
 		var lowest := -INF
+		var ground_first := (i / 240) % 2 == 1
 		for index: int in stage.enemies.alive_indices():
 			var at := stage.enemies.position_of(index)
-			if at.y > lowest and at.y < ship.state.position.y - 40.0:
+			if not ground_first and at.y > lowest and at.y < ship.state.position.y - 40.0:
 				lowest = at.y
 				target_x = at.x
 		if lowest == -INF:

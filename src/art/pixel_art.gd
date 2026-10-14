@@ -281,6 +281,18 @@ const SPRITES: Dictionary[String, Array] = {
 		"........kek...kek........",
 		".........k.....k.........",
 	],
+	# A homing missile from a boss's missile pod (shootable). 7x9.
+	"boss_missile": [
+		"..kkk..",
+		".kRrRk.",
+		".kRrRk.",
+		".kRrRk.",
+		".kRrRk.",
+		"kRkrkRk",
+		"kk.y.kk",
+		"...o...",
+		"...y...",
+	],
 	# Pickups (Pickups.SPRITES): Scrap is a small gem (7x7); power-ups are
 	# bigger round badges (13x13) so they stand out (playtest 1).
 	"pickup_scrap": [

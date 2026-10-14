@@ -221,16 +221,24 @@ ground 215  turret x=380
 ground 222  tank x=580 mirror
 ground 229  heavy_turret x=240
 
-# --- Boss (from 240 s): the base's command gunship. The scroll stops. ---
-# Phase 1: aimed fans from the wing guns, a spinning ring, bursts at each ship.
-# Phase 2 (below half HP): a spiral, lines of shots, a ring with gaps, a spray.
-boss base_boss x=480
-boss_step 1 aimed_fan_5 aim=nearest wait=1.3 dx=-44 dy=12
-boss_step 1 aimed_fan_5 aim=nearest wait=1.3 dx=44 dy=12
-boss_step 1 ring_12 aim=spin wait=1.6
-boss_step 1 burst_3 aim=each wait=1.2 dy=20
-boss_step 2 spiral aim=nearest wait=1.0
-boss_step 2 aimed_line_5 aim=each wait=0.8 dx=-44 dy=12
-boss_step 2 aimed_line_5 aim=each wait=0.8 dx=44 dy=12
-boss_step 2 ring_24 aim=nearest wait=1.8
-boss_step 2 spray aim=fixed angle=90 wait=1.2 dy=20
+# --- Boss (from 240 s): the Fortress Gunship. The scroll stops. ---
+# A wide hull with parts (playtest 2, Jamestown-style): the two wing cannons are
+# required, and the core stays armored until both are gone. The missile pods
+# (homing missiles you can shoot down) and the drone hangar are optional, but
+# they keep pouring out enemies until destroyed. Below 30% core HP the whole
+# boss sinks toward you.
+boss fortress_core x=480
+boss_part wing_cannon dx=-268 dy=6 required
+boss_part wing_cannon dx=268 dy=6 required
+boss_part missile_pod dx=-150 dy=-16
+boss_part missile_pod dx=150 dy=-16
+boss_part hangar dx=0 dy=-34
+# The core's script, once it's open. Phase 2 (below half its HP) is faster.
+boss_step 1 spiral aim=nearest wait=1.4 dy=10
+boss_step 1 laser aim=nearest wait=2.2 dy=20
+boss_step 1 ring_12 aim=spin wait=1.2
+boss_step 1 aimed_fan_5 aim=each wait=1.0 dy=20
+boss_step 2 laser aim=each wait=1.6 dy=20
+boss_step 2 spiral aim=nearest wait=0.8 dy=10
+boss_step 2 ring_24 aim=nearest wait=1.0
+boss_step 2 aimed_line_5 aim=each wait=0.7 dy=20
