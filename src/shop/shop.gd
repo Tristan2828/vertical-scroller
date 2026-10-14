@@ -47,6 +47,7 @@ var _ready_button: Button
 
 func _ready() -> void:
 	_build()
+	Music.play(&"shop")
 	var run := RunState.current
 	if multiplayer.is_server():
 		_rng.seed = run.seed_value + 7919 * run.stages_done
@@ -238,6 +239,7 @@ func _refresh_status() -> void:
 # --- Local actions (host: straight to the session; clients: ask the host) ------------
 
 func _buy_locally(item: int) -> void:
+	Sfx.play(&"buy")
 	if multiplayer.is_server():
 		_host_buy(1, item)
 	else:

@@ -7,6 +7,8 @@ extends Node
 signal changed
 
 const PATH: String = "user://settings.cfg"
+const SHAKE_NAMES: Array[String] = ["Off", "Low", "Full"]
+const SHAKE_STRENGTHS: Array[float] = [0.0, 0.5, 1.0]
 
 var master_volume: float = 0.8
 var sfx_volume: float = 0.8
@@ -17,6 +19,8 @@ var scaling_mode: ScreenFit.Mode = ScreenFit.Mode.SHARP
 var fire_mode: FireControl.Mode = FireControl.Mode.ALWAYS
 ## The ship glides toward the mouse cursor; right click focus, left click special.
 var mouse_mode: bool = false
+## Screen shake on big hits and explosions: an index into SHAKE_NAMES.
+var screen_shake: int = 2
 ## Name shown to the other players (title menu).
 var player_name: String = ""
 
@@ -42,6 +46,7 @@ func load_settings() -> void:
 	scaling_mode = clampi(config.get_value("video", "scaling_mode", scaling_mode), 0, ScreenFit.Mode.size() - 1) as ScreenFit.Mode
 	fire_mode = clampi(config.get_value("controls", "fire_mode", fire_mode), 0, FireControl.Mode.size() - 1) as FireControl.Mode
 	mouse_mode = config.get_value("controls", "mouse_mode", mouse_mode)
+	screen_shake = clampi(config.get_value("video", "screen_shake", screen_shake), 0, SHAKE_NAMES.size() - 1)
 	player_name = str(config.get_value("player", "name", player_name))
 
 
@@ -54,8 +59,13 @@ func save() -> void:
 	config.set_value("video", "scaling_mode", scaling_mode)
 	config.set_value("controls", "fire_mode", fire_mode)
 	config.set_value("controls", "mouse_mode", mouse_mode)
+	config.set_value("video", "screen_shake", screen_shake)
 	config.set_value("player", "name", player_name)
 	config.save(PATH)
+
+
+func shake_strength() -> float:
+	return SHAKE_STRENGTHS[clampi(screen_shake, 0, SHAKE_STRENGTHS.size() - 1)]
 
 
 ## Index of an audio bus, created (routed to Master) if it doesn't exist yet.

@@ -16,6 +16,21 @@ theme_override_font_sizes/font_size = 18
 text = "Settings"
 horizontal_alignment = 1
 
+[node name="MasterButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Volume"
+
+[node name="SfxButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Sound effects"
+
+[node name="MusicButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Music"
+
 [node name="ScalingButton" type="Button" parent="Box"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -36,6 +51,11 @@ text = "Auto-fire"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Mouse mode"
+
+[node name="ShakeButton" type="Button" parent="Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Screen shake"
 
 [node name="FullscreenButton" type="Button" parent="Box"]
 unique_name_in_owner = true

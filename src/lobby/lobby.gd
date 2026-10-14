@@ -36,6 +36,7 @@ var _mode_button: Button
 
 
 func _ready() -> void:
+	Music.play(&"menu")
 	_build()
 	var is_host := multiplayer.is_server()
 	_start_button.visible = is_host

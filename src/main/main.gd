@@ -83,6 +83,12 @@ func _ready() -> void:
 		if lobby != null and not multiplayer.is_server():
 			lobby.leave_requested.connect(_leave_game.bind("You left the game.")))
 	_menu.show_menu()
+	Music.play(&"menu")
+	# Every button anywhere clicks softly when pressed (menus, lobby, shop).
+	get_tree().node_added.connect(func(node: Node) -> void:
+		var button := node as BaseButton
+		if button != null:
+			button.pressed.connect(func() -> void: Sfx.play(&"ui", -8.0)))
 	_apply_launch_options()
 
 
@@ -232,6 +238,7 @@ func _leave_game(message: String) -> void:
 	Net.leave_game()
 	_clear_level()
 	_menu.show_menu(message)
+	Music.play(&"menu")
 
 
 func _report_and_quit() -> void:

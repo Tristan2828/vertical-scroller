@@ -19,6 +19,7 @@ var _back_button: Button
 
 
 func _ready() -> void:
+	Music.play(&"menu")
 	var run := RunState.current
 	var best_before := RunRecords.best_score()
 	# Boss-only practice runs don't count toward the personal best.

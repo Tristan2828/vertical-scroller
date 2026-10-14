@@ -70,6 +70,8 @@ const DESPERATION_SINK: float = 90.0
 const DESPERATION_SPEED: float = 45.0
 ## The Mega Bomb's expanding ring.
 const MEGA_BOMB_COLOR: Color = Color(1.0, 0.95, 0.75)
+## Air enemies at least this big (EnemyType.radius) blow up with the bigger sound.
+const BIG_ENEMY_RADIUS: float = 11.0
 
 ## Which stage (Stages.PATHS index).
 var stage_index: int = 0
@@ -153,6 +155,8 @@ func _ready() -> void:
 	ground.play_area = play_area
 	ground.setup(def)
 	ground.destroyed.connect(_on_ground_destroyed)
+	player_bullets.hit_at.connect(func(_at: Vector2) -> void: Sfx.play(&"hit", -10.0))
+	pickups.picked_up_at.connect(_play_pickup_sound)
 	pickups.play_area = play_area
 	# Later stages shoot faster (draft: the interval shrinks with difficulty).
 	enemies.fire_interval_scale = ENEMY_FIRE_INTERVAL / (1.0 + 0.5 * (difficulty - 1.0))
@@ -162,6 +166,7 @@ func _ready() -> void:
 	if modifier != StageModifiers.Id.NONE:
 		title += "\nTwist: %s - %s" % [StageModifiers.name_of(modifier), StageModifiers.HINTS[modifier]]
 	hud.show_banner(title, 3.5)
+	Music.play(&"stage")
 	if multiplayer.is_server():
 		pickups.collected.connect(_on_pickup_collected)
 		team_scrap = run.team_scrap
@@ -199,9 +204,12 @@ func _enter_tree() -> void:
 
 ## --perf-log: frame timing every frame, a report line every second.
 var _perf_seconds: float = 0.0
+## Visual only: the whole stage picture shifts a few pixels (the HUD stays put).
+var shake: ScreenShake = ScreenShake.new()
 
 
 func _process(delta: float) -> void:
+	position = shake.step(delta, Settings.shake_strength())
 	if not PerfLog.enabled:
 		return
 	PerfLog.frame()
@@ -440,11 +448,21 @@ func _spawn_ship(data: Variant) -> Node:
 	ship.special_requested.connect(_use_special)
 	ship.downed.connect(func(downed: Ship) -> void:
 		effects.blast(downed.state.position, 2.5)
+		Sfx.play(&"down")
+		if downed.is_local():
+			shake.add(0.7)
 		if multiplayer.is_server():
 			RunState.current.player(downed.peer_id).downs += 1
 		if downed.is_local():
 			hud.show_banner("Shot down!", 1.5))
-	ship.hurt.connect(func(_hurt: Ship, amount: int) -> void: stats.damage_taken += amount)
+	ship.hurt.connect(func(hurt_ship: Ship, amount: int) -> void:
+		stats.damage_taken += amount
+		if hurt_ship.is_local():
+			Sfx.play(&"hurt")
+			shake.add(0.45))
+	ship.respawned.connect(func(back: Ship) -> void:
+		if back.is_local():
+			Sfx.play(&"respawn"))
 	stats.team_max_hp += ship.health.max_hp
 	# The team's Rapid Fire from the shop, for the start of the stage.
 	ship.state.rapid_fire_left = RunState.current.team_rapid_fire
@@ -498,6 +516,8 @@ func _on_ship_fired(ship: Ship, seq: int, focus: bool) -> void:
 	var power := ship.state.power
 	var wingmen := ship.state.wingmen_left > 0.0
 	_spawn_shot(ship.peer_id, pattern, origin, seed_value, focus, power, wingmen, 0.0)
+	if ship.is_local():
+		Sfx.play(&"shoot", -9.0)
 	if multiplayer.is_server():
 		for peer_id: int in _ready_peers:
 			# The shooter already predicted this shot itself.
@@ -577,7 +597,10 @@ func _show_special(peer_id: int, kind: int, at: Vector2) -> void:
 			enemy_bullets.clear()
 			effects.ring(at, 620.0, MEGA_BOMB_COLOR)
 			effects.blast(at, 3.0)
+			Sfx.play(&"bomb")
+			shake.add(0.8)
 		Specials.Kind.SHIELD:
+			Sfx.play(&"shield")
 			var ship := ship_of(peer_id)
 			if ship != null:
 				ship.state.shield_left = Specials.SHIELD_SECONDS
@@ -665,6 +688,9 @@ func _spawn_pattern(pattern: int, origin: Vector2, aim: float, seed_value: int, 
 		return
 	if pattern == ShotPatterns.Id.LASER:
 		effects.warning(origin, aim, ShotPatterns.LASER_WARNING - age)
+		Sfx.play(&"laser_charge", -4.0)
+	else:
+		Sfx.play(&"enemy_shot", -12.0)
 	var bullets := ShotPatterns.build(pattern as ShotPatterns.Id, aim, seed_value)
 	for i: int in range(0, bullets.size(), ShotPatterns.STRIDE):
 		var offset := Vector2(bullets[i + 3], bullets[i + 4])
@@ -729,9 +755,17 @@ func _apply_contact(list: Array[Ship]) -> void:
 
 func _on_enemy_killed(index: int, at: Vector2, by_peer: int) -> void:
 	kills += 1
+	var type := enemies.type_of(index)
+	if type.is_boss:
+		Sfx.play(&"big_boom")
+		shake.add(1.0)
+	elif type.boss_part or type.radius >= BIG_ENEMY_RADIUS:
+		Sfx.play(&"boom", -2.0)
+		shake.add(0.4 if type.boss_part else 0.15)
+	else:
+		Sfx.play(&"pop", -4.0)
 	if not multiplayer.is_server():
 		return
-	var type := enemies.type_of(index)
 	var scrap_scale := StageModifiers.ELITE_SCRAP if enemies.is_elite(index) else 1
 	if not type.is_boss and not type.boss_part:
 		stats.air_killed += 1
@@ -747,6 +781,8 @@ func _on_enemy_killed(index: int, at: Vector2, by_peer: int) -> void:
 
 func _on_ground_destroyed(index: int, at: Vector2, by_peer: int) -> void:
 	ground_kills += 1
+	Sfx.play(&"boom", -4.0)
+	shake.add(0.12)
 	if not multiplayer.is_server():
 		return
 	stats.ground_destroyed += 1
@@ -787,6 +823,17 @@ func _on_pickup_collected(kind: int, value: int, peer_id: int) -> void:
 				ship.special_charges += 1
 
 
+## Every peer: someone picked something up.
+func _play_pickup_sound(_at: Vector2, kind: int) -> void:
+	match kind:
+		Pickups.Kind.SCRAP:
+			Sfx.play(&"scrap", -6.0)
+		Pickups.Kind.POWER_ORB:
+			Sfx.play(&"power_up")
+		_:
+			Sfx.play(&"boost")
+
+
 # --- Host: boss -------------------------------------------------------------------
 
 ## The waves are over: the scroll stops (StageDef.scroll_distance) and the boss flies in.
@@ -821,6 +868,8 @@ func _start_boss() -> void:
 
 func _show_boss_warning() -> void:
 	hud.show_banner("WARNING\n%s" % boss_name(), 3.0)
+	Sfx.play(&"warning")
+	Music.play(&"boss")
 
 
 func _tick_boss(delta: float) -> void:
@@ -867,6 +916,8 @@ func _tick_boss(delta: float) -> void:
 
 func _show_core_open() -> void:
 	hud.show_banner("The core is open!", 2.0)
+	Sfx.play(&"core_open")
+	shake.add(0.3)
 
 
 func _on_boss_defeated(at: Vector2) -> void:
@@ -950,8 +1001,12 @@ func _show_end(result: Phase, results: Dictionary = {}) -> void:
 	ended.emit()
 	if result == Phase.GAME_OVER:
 		hud.show_banner("Game over\nThe team ran out of ships.", END_SECONDS)
+		Sfx.play(&"defeat")
+		Music.play(&"menu")
 	else:
 		hud.show_results(results, RESULTS_SECONDS)
+		Sfx.play(&"victory")
+		Music.play(&"shop")
 
 
 # --- Networking --------------------------------------------------------------

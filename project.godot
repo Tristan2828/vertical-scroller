@@ -21,6 +21,8 @@ config/icon="res://icon.svg"
 GameInput="*res://src/autoload/game_input.gd"
 Settings="*res://src/autoload/settings.gd"
 Net="*res://src/autoload/net.gd"
+Sfx="*res://src/autoload/sfx.gd"
+Music="*res://src/autoload/music.gd"
 
 [debug]
 
