@@ -1,0 +1,61 @@
+# vertical-scroller asset manifest (gamekit). One entry per asset; check it with `gamekit validate`.
+# Built from the code on 2026-10-13: src/art/pixel_art.gd (text sprites), src/enemies/boss_art.gd and
+# ground_manager.gd (boss parts and ground objects, drawn by code at their EnemyType `size`).
+# Sizes and frames are what the game uses now (960x540, drawn at 1x). Nothing here is in the game as
+# a file yet: the game still draws everything from code (gray-box until the art pass, PLAN.md M6).
+# Not listed: base_boss (the old Command Gunship, replaced by the Fortress Gunship but kept in the
+# append-only EnemyTypes registry), bullets, explosions, shield bubble, hitbox ring, HUD bars and the
+# scrolling ground (all drawn by code). No sounds or music yet: the game has no audio (DESIGN.md §6).
+# Field reference: gamekit's templates/assets.yaml.
+game: vertical-scroller
+output: assets
+palette: palette.hex
+frame_files: true       # one PNG per frame, named like the game's sprites: striker.png, striker_1.png
+code_art: src/art/pixel_art.gd   # the game's own text sprites: the asset page shows them until a file replaces them
+sprites:                # the game's sprite rules, used when a picture becomes a sprite
+  prompt: "pixel art sprite, top-down view, sci-fi military, vertical scrolling shoot'em up, strong simple silhouette, thick dark outline, readable at small size"
+  outline: "#0F121C"    # PixelArt's "k"
+  reserved_colors: ["#FF00FF", "#800080"]  # player colors: the game recolors them, so never snap to them
+  game_scale: 2         # 960x540 is drawn 2x on a 1080p screen
+  floors: {Planet Base: "#1F2221"}  # ScrollBackground.GROUND
+
+assets:
+  # --- Player ships (nose up; P/p areas = player color; frame 1 = engine flicker) ---
+  - {id: striker, kind: sprite, source: pack, status: todo, file: art/striker.png, size: [23, 22], frames: {idle: 2}, replaces: ship, notes: 'balanced; 3-way spread gun'}
+  - {id: lancer, kind: sprite, source: pack, status: todo, file: art/lancer.png, size: [21, 20], frames: {idle: 2}, replaces: ship_lancer, notes: 'tough and slow; heavy piercing lances'}
+  - {id: hornet, kind: sprite, source: pack, status: todo, file: art/hornet.png, size: [19, 13], frames: {idle: 2}, replaces: ship_hornet, notes: 'fragile, fast, smallest; twin guns + homing missiles'}
+  - {id: vulcan, kind: sprite, source: pack, status: todo, file: art/vulcan.png, size: [21, 16], frames: {idle: 2}, replaces: ship_vulcan, notes: 'balanced; very fast sweeping streams'}
+  - {id: wave, kind: sprite, source: pack, status: todo, file: art/wave.png, size: [25, 13], frames: {idle: 2}, replaces: ship_wave, notes: 'balanced; wide arcs that cover the screen'}
+  - {id: wingman, kind: sprite, source: pack, status: todo, file: art/wingman.png, size: [5, 7], notes: 'Wingmen boost: a small side drone next to the ship (player-colored)'}
+
+  # --- Air enemies (facing down; elites are the same sprite tinted gold) ---
+  - {id: drone, kind: sprite, source: pack, status: todo, file: art/drone.png, size: [15, 11], notes: 'small popcorn enemy, comes in big swarms, slow aimed shots'}
+  - {id: fighter, kind: sprite, source: pack, status: todo, file: art/fighter.png, size: [17, 14], notes: 'a tougher drone that shoots aimed fans'}
+  - {id: gunship, kind: sprite, source: pack, status: todo, file: art/gunship.png, size: [23, 14], notes: 'armored, hovers and tracks a player'}
+  - {id: kamikaze, kind: sprite, source: pack, status: todo, file: art/kamikaze.png, size: [11, 12], notes: 'locks onto a player and rams them'}
+
+  # --- Ground objects (Planet Base; drawn under the air layer: darker, desaturated) ---
+  - {id: turret, kind: sprite, source: pack, status: todo, file: art/turret.png, size: [20, 20], notes: 'base and dome; the game draws the turning barrel on top. Destroyed: rubble drawn by code'}
+  - {id: heavy_turret, kind: sprite, source: pack, status: todo, file: art/heavy_turret.png, size: [28, 28], notes: 'bigger turret with a double barrel (barrel drawn by code)'}
+  - {id: tank, kind: sprite, source: pack, status: todo, file: art/tank.png, size: [16, 22], notes: 'tracks and hull, nose down; the game draws the turning barrel. Tank columns and convoys'}
+  - {id: bunker, kind: sprite, source: pack, status: todo, file: art/bunker.png, size: [44, 30], notes: 'concrete bunker with a firing slit'}
+  - {id: radar, kind: sprite, source: pack, status: todo, file: art/radar.png, size: [32, 32], notes: 'round radar dish seen from above; the game draws the sweeping arm'}
+
+  # --- Stage 1 boss: Fortress Gunship (parts placed by the stage file; turret barrels, lights, doors and the core eye are drawn by code) ---
+  - {id: fortress_core, kind: sprite, source: claude, status: todo, file: art/fortress_core.png, size: [600, 56], notes: 'the hull, about 3/4 of the screen wide; wide at the top, tapering under the core. Today: BossArt._hull'}
+  - {id: wing_cannon, kind: sprite, source: claude, status: todo, file: art/wing_cannon.png, size: [60, 44], notes: 'required part, one on each wing; fires aimed fans'}
+  - {id: missile_pod, kind: sprite, source: claude, status: todo, file: art/missile_pod.png, size: [36, 30], notes: 'optional part; launches homing missiles'}
+  - {id: hangar, kind: sprite, source: claude, status: todo, file: art/hangar.png, size: [76, 30], notes: 'optional part; a drone hangar with doors that launches drones'}
+  - {id: boss_missile, kind: sprite, source: pack, status: todo, file: art/boss_missile.png, size: [7, 9], notes: 'homing missile from a missile pod, nose down; can be shot down'}
+
+  # --- Pickups (13x13 round badges so they stand out, playtest 1) ---
+  - {id: pickup_scrap, kind: sprite, source: claude, status: todo, file: art/pickup_scrap.png, size: [7, 7], notes: 'Scrap, the currency; dropped a lot'}
+  - {id: pickup_orb, kind: sprite, source: claude, status: todo, file: art/pickup_orb.png, size: [13, 13], notes: 'power orb: main gun power +1'}
+  - {id: pickup_rapid, kind: sprite, source: claude, status: todo, file: art/pickup_rapid.png, size: [13, 13], notes: 'Rapid Fire boost'}
+  - {id: pickup_wingmen, kind: sprite, source: claude, status: todo, file: art/pickup_wingmen.png, size: [13, 13], notes: 'Wingmen boost'}
+  - {id: pickup_charge, kind: sprite, source: claude, status: todo, file: art/pickup_charge.png, size: [13, 13], notes: 'special charge +1'}
+
+  # --- HUD icons (full, or drawn hollow by the game for empty slots) ---
+  - {id: hud_power, kind: icon, source: claude, status: todo, file: icons/hud_power.png, size: [9, 9], notes: 'power level: an arrow'}
+  - {id: hud_bomb, kind: icon, source: claude, status: todo, file: icons/hud_bomb.png, size: [9, 10], notes: 'Mega Bomb charge'}
+  - {id: hud_shield, kind: icon, source: claude, status: todo, file: icons/hud_shield.png, size: [9, 10], notes: 'Shield charge'}

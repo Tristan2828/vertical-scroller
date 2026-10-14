@@ -1,0 +1,31 @@
+; vertical-scroller palette: PixelArt.PALETTE (src/art/pixel_art.gd) then BossArt's steel colors
+; (src/enemies/boss_art.gd). The name after each color is its key in text sprites. P / p are the
+; player colors the game recolors per player: draw them as #FF00FF (main) and #800080 (shade).
+; A placeholder palette: the art pass (asset packs, PLAN.md M6) may replace it.
+0F121C k outline
+F2F5FF w
+9EA8BD l
+616980 L
+66D9FF t
+2E80B8 T
+F28C2B o
+FFDB66 y
+FFF2BF e
+DB4545 r
+852433 R
+73D980 g
+388C47 G
+FF4C8C m
+99451A O
+962959 M
+0D0F14 boss outline
+5C6678 boss steel
+8794A8 boss steel light
+3D4552 boss steel dark
+2B303B boss seam
+ADB8C7 boss rivet
+AD2E3D boss trim
+6B1A26 boss trim dark
+F2BF40 boss hazard
+FF00FF P player color
+800080 p player shade
