@@ -31,8 +31,10 @@ const SCALING_NAMES: Array[String] = ["sharp", "pixel"]
 
 var _sharp_material: ShaderMaterial = ShaderMaterial.new()
 var _run_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _feedback: FeedbackScreen = null
 
 @onready var _view: SubViewportContainer = $GameView
+@onready var _game_viewport: SubViewport = $GameView/GameViewport
 @onready var _level: Node = $GameView/GameViewport/Level
 @onready var _level_spawner: MultiplayerSpawner = $GameView/GameViewport/LevelSpawner
 @onready var _menu: MainMenu = $GameView/GameViewport/MainMenu
@@ -63,6 +65,15 @@ func _ready() -> void:
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	_pause_menu.leave_requested.connect(_leave_game.bind("You left the game."))
+	_feedback = FeedbackScreen.new()
+	_game_viewport.add_child(_feedback)
+	_menu.feedback_requested.connect(func() -> void: _feedback.open(null, _feedback_context()))
+	_pause_menu.feedback_requested.connect(_open_feedback_from_pause)
+	_feedback.closed.connect(func() -> void:
+		if _menu.visible:
+			_menu.show_panel_after_feedback()
+		elif _level.get_child_count() > 0:
+			_pause_menu.show_after_feedback())
 	# Clients get the lobby / stage from LevelSpawner: hide the menu when it arrives.
 	_level.child_entered_tree.connect(func(node: Node) -> void:
 		_screenshot_scene(node)
@@ -100,6 +111,29 @@ func _apply_launch_options() -> void:
 		_take_screenshots()
 	if LaunchOptions.run_for_seconds > 0.0:
 		get_tree().create_timer(LaunchOptions.run_for_seconds, true).timeout.connect(_report_and_quit)
+
+
+## From the pause menu: hide it for a moment so the screenshot shows the game.
+func _open_feedback_from_pause() -> void:
+	_pause_menu.hide()
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var image := _game_viewport.get_texture().get_image()
+	image.convert(Image.FORMAT_RGB8)  # The SubViewport's picture has an alpha channel.
+	_feedback.open(image, _feedback_context())
+
+
+## Version, OS and where the player is (title menu, lobby, shop, or the stage's details).
+func _feedback_context() -> String:
+	var where := "Title menu"
+	var scene := _level.get_child(0) if _level.get_child_count() > 0 else null
+	if scene is Stage:
+		where = (scene as Stage).feedback_context()
+	elif scene != null:
+		var run := RunState.current
+		where = "In the %s (%s), %d of %d stages done" % [String(scene.name).to_snake_case().replace("_", " "),
+			"host" if multiplayer.is_server() else "client", run.stages_done, run.stage_plan.size()]
+	return "%s, %s\n%s" % [BuildInfo.describe(), OS.get_name(), where]
 
 
 # --- Sessions ------------------------------------------------------------------
@@ -245,6 +279,9 @@ func _take_screenshots() -> void:
 	await get_tree().create_timer(1.5, true).timeout
 	if LaunchOptions.mode == LaunchOptions.Mode.MENU:
 		await save_screenshot(get_tree(), "title.png")
+		_feedback.open(null, _feedback_context())
+		await save_screenshot(get_tree(), "feedback_title.png")
+		_feedback.close()
 		return
 	await save_screenshot(get_tree(), "lobby%s.png" % role)
 	while _level.get_node_or_null("Stage") == null:
@@ -258,4 +295,8 @@ func _take_screenshots() -> void:
 	await save_screenshot(get_tree(), "pause_menu%s.png" % role)
 	_pause_menu.open_settings()
 	await save_screenshot(get_tree(), "settings%s.png" % role)
+	_pause_menu.open()
+	await _open_feedback_from_pause()
+	await save_screenshot(get_tree(), "feedback%s.png" % role)
+	_feedback.close()
 	_pause_menu.close()

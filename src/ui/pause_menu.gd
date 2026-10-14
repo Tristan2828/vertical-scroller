@@ -5,6 +5,8 @@ extends CanvasLayer
 ## for everyone (host included), so only your own controls are blocked.
 
 signal leave_requested
+## "Send feedback" was pressed (Main hides this menu, takes a screenshot, opens the screen).
+signal feedback_requested
 
 ## Main allows the menu only while a lobby or stage is loaded.
 var allowed: bool = false
@@ -13,6 +15,7 @@ var allowed: bool = false
 @onready var _hint: Label = %Hint
 @onready var _resume_button: Button = %ResumeButton
 @onready var _settings_button: Button = %SettingsButton
+@onready var _feedback_button: Button = %FeedbackButton
 @onready var _leave_button: Button = %LeaveButton
 @onready var _quit_button: Button = %QuitButton
 @onready var _settings: SettingsPanel = %Settings
@@ -27,6 +30,7 @@ func _ready() -> void:
 	_settings.closed.connect(func() -> void:
 		_box.show()
 		_settings_button.grab_focus())
+	_feedback_button.pressed.connect(func() -> void: feedback_requested.emit())
 	_leave_button.pressed.connect(func() -> void:
 		close()
 		leave_requested.emit())
@@ -44,6 +48,13 @@ func open() -> void:
 		_hint.text = "Paused."
 		get_tree().paused = true
 	_resume_button.grab_focus()
+
+
+## Back from the feedback screen (still paused / input still blocked).
+func show_after_feedback() -> void:
+	show()
+	_box.show()
+	_feedback_button.grab_focus()
 
 
 func open_settings() -> void:

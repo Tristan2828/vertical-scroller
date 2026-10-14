@@ -12,7 +12,9 @@ is how it plays, alone or with friends.
    anyway.
    If Windows says "Windows protected your PC", click "More info" then
    "Run anyway". It warns because the game is new and isn't signed by a big
-   publisher, not because anything is wrong.
+   publisher, not because anything is wrong. You only have to do this once:
+   later versions install themselves from the title screen ("Update now"),
+   and those don't trigger the warning.
 
 2. Type your name. Play Solo, or click "Join Game", paste the invite your
    host sent you (looks like 203.0.113.5:7777) and click Join.
@@ -21,7 +23,9 @@ is how it plays, alone or with friends.
    what its gun does) and your special (Mega Bomb or Shield), then press
    Ready. The host starts the game.
 
-Everyone needs the same build: if the host sends a new zip, use that one.
+Everyone needs the same version: it's in the bottom-left corner of the
+title menu. New versions show up there with an "Update now" button, or at
+https://github.com/Tristan2828/vertical-scroller/releases/latest
 
 A run: Planet Base (about 4 minutes, a boss at the end) -> results -> shop
 -> Planet Base again, harder and with a twist -> run summary.
@@ -42,3 +46,6 @@ and rare boosts.
 
 Hosting: click "Host Game"; the lobby shows your invite and copies it to
 the clipboard. If friends can't connect, open UDP port 7777 on your router.
+
+Found a bug or have an idea? Use "Send feedback" on the title menu or in
+the Esc menu (it can include a screenshot of the game).

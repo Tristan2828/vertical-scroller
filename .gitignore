@@ -16,6 +16,8 @@ __MACOSX/
 
 # Written by tools/build.ps1 for each exported build
 build_info.cfg
+# Discord webhook for in-game feedback (secret; build.ps1 stamps it into build_info.cfg)
+feedback_webhook.txt
 
 # gamekit's asset page launcher (made by `gamekit.py ui --launcher`; points at a path on this PC)
 Start Gamekit.bat

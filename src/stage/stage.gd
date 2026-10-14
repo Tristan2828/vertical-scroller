@@ -321,6 +321,31 @@ func boss_name() -> String:
 
 
 ## Text summary for headless smoke tests (--run-for).
+## Game info sent with feedback: where the run is, this player's ship, the session.
+func feedback_context() -> String:
+	var lines := PackedStringArray()
+	var run := RunState.current
+	var twist := StageModifiers.name_of(modifier) if modifier != StageModifiers.Id.NONE else "no twist"
+	lines.append("Stage %d/%d: %s, %s, %s (%s)%s, %d kills, ground %d/%d" % [run.stages_done + 1, run.stage_plan.size(),
+		def.name, twist, _clock_text(), Phase.keys()[phase].to_lower(), ", boss only" if run.boss_only else "",
+		kills, ground_kills, ground.count()])
+	var ship := local_ship()
+	if ship != null:
+		lines.append("%s (%s), HP %d/%d%s, power %d, %s x%d" % [ship.stats.display_name, ship.display_name(),
+			ship.health.hp, ship.health.max_hp, " (down)" if ship.is_down() else "", ship.state.power,
+			Specials.NAMES[ship.special_kind], ship.special_charges])
+	var session := "Solo"
+	if Net.is_online():
+		session = "Co-op, %d players, %s" % [ships().size(), "host" if multiplayer.is_server() else "client, ping %d ms" % Net.ping_ms()]
+	lines.append(session)
+	return "\n".join(lines)
+
+
+func _clock_text() -> String:
+	var clock := "%d:%02d" % [int(stage_time) / 60, int(stage_time) % 60]
+	return clock + (", boss at %.0f%%" % (boss_hp_ratio * 100.0) if phase == Phase.BOSS else "")
+
+
 func debug_report() -> String:
 	var lines := PackedStringArray()
 	var role := "host" if multiplayer.is_server() else "client"

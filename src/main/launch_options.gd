@@ -16,6 +16,8 @@ extends RefCounted
 ##   --weak-bosses                bosses have 2% HP (test the stage ending quickly)
 ##   --boss-only                  the lobby starts with "Boss only" on (every stage starts at its boss)
 ##   --invincible                 hits still land and count, but HP refills at once
+##   --update-now                 exported game: install a newer release as soon as it's found
+##                                (end-to-end updater test)
 ##   --perf-log                   every second: fps, worst frame, step timings, memory, objects
 ##   --ship=<n>                   fly this ship (Ships.ALL index: 0 Striker, 1 Lancer, 2 Hornet,
 ##                                3 Vulcan, 4 Wave); picked in the lobby by itself
@@ -42,6 +44,7 @@ static var weak_bosses: bool = false
 ## --ship: Ships.ALL index, -1 = the lobby's choice.
 static var ship: int = -1
 static var invincible: bool = false
+static var update_now: bool = false
 static var screenshot_dir: String = ""
 ## Zero = use the fullscreen setting.
 static var window_size: Vector2i = Vector2i.ZERO
@@ -78,6 +81,8 @@ static func parse(args: PackedStringArray) -> void:
 			RunSetup.boss_only = true
 		elif arg == "--invincible":
 			invincible = true
+		elif arg == "--update-now":
+			update_now = true
 		elif arg == "--perf-log":
 			PerfLog.enabled = true
 		elif arg.begins_with("--ship="):
