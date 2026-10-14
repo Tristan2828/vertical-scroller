@@ -44,6 +44,9 @@ var _positions: PackedVector2Array = PackedVector2Array()
 var _aims: PackedFloat32Array = PackedFloat32Array()
 ## Explosions: x, y, age.
 var _explosions: Array[Vector3] = []
+## Indices of the objects standing on screen this tick (rebuilt by tick()), so
+## bullets only look at those.
+var _live: PackedInt32Array = PackedInt32Array()
 
 
 func setup(def: StageDef) -> void:
@@ -87,6 +90,7 @@ func position_at(index: int, stage_time: float) -> Vector2:
 func tick(stage_time: float, delta: float, ships: PackedVector2Array, hp_scale: float) -> void:
 	_time = stage_time
 	var area := play_area.grow(40.0)
+	_live.clear()
 	for i: int in _defs.size():
 		_positions[i] = position_at(i, stage_time)
 		var was_on_screen := _on_screen[i] == 1
@@ -98,6 +102,8 @@ func tick(stage_time: float, delta: float, ships: PackedVector2Array, hp_scale: 
 			_hp[i] = maxi(roundi(type.max_hp * hp_scale), 1)
 			_next_fire[i] = stage_time + type.first_shot_delay
 		_flash[i] = maxf(_flash[i] - delta, 0.0)
+		if _destroyed[i] == 0:
+			_live.append(i)
 		var target := nearest(_positions[i], ships)
 		if target.is_finite():
 			_aims[i] = (target - _positions[i]).angle()
@@ -170,7 +176,7 @@ func destroyed_count() -> int:
 
 
 func find_hit_on_path(from: Vector2, to: Vector2, bullet_radius: float, ignore: int = -1) -> int:
-	for i: int in _defs.size():
+	for i: int in _live:
 		if i == ignore or not is_alive(i):
 			continue
 		var reach := EnemyTypes.ALL[_defs[i].type_id].radius + bullet_radius

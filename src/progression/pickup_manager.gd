@@ -22,7 +22,7 @@ const BURST_SPEED: float = 70.0
 const BURST_DAMPING: float = 3.0
 ## Scrap is pulled from further away than power-ups (you aim for those).
 const SCRAP_MAGNET: float = 80.0
-const POWER_UP_MAGNET: float = 30.0
+const POWER_UP_MAGNET: float = 36.0
 const COLLECT_RADIUS: float = 12.0
 const PULL_ACCELERATION: float = 1400.0
 const MAX_PULL_SPEED: float = 520.0
@@ -240,7 +240,7 @@ func _draw() -> void:
 		var at := _positions[id]
 		if kind != Pickups.Kind.SCRAP:
 			# Power-ups pulse a soft glow so they stand out from Scrap.
-			var glow := PixelArt.disc_texture(8.0 if int(_time * 4.0) % 2 == 0 else 7.0, GLOW)
+			var glow := PixelArt.disc_texture(11.0 if int(_time * 4.0) % 2 == 0 else 10.0, GLOW)
 			draw_texture(glow, (at - Vector2(glow.get_size()) / 2.0).round())
 		PixelArt.draw(self, Pickups.SPRITES[clampi(kind, 0, Pickups.SPRITES.size() - 1)], at)
 

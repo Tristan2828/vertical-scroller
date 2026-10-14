@@ -13,7 +13,7 @@ extends Node2D
 ## spawn record with its pool index (so "enemy #12" is the same enemy
 ## everywhere), each redirect, and each death. Clients' bullets only flash enemies.
 
-const CAPACITY: int = 128
+const CAPACITY: int = 256
 ## Enemies further than this outside the screen are removed.
 const LEAVE_MARGIN: float = 48.0
 ## How long a hit enemy stays white.
@@ -65,6 +65,9 @@ var _leaving: PackedByteArray = PackedByteArray()
 var _elite: PackedByteArray = PackedByteArray()
 ## Explosions: x, y, age.
 var _explosions: Array[Vector3] = []
+## Pool indices of the enemies alive this tick (rebuilt by tick()), so bullets
+## and collisions only look at those instead of every pool slot.
+var _live: PackedInt32Array = PackedInt32Array()
 
 
 func _init() -> void:
@@ -224,6 +227,7 @@ func apply_records(data: Array) -> void:
 ## that flew off screen.
 func tick(stage_time: float, delta: float) -> void:
 	var leave_area := play_area.grow(LEAVE_MARGIN)
+	_live.clear()
 	for i: int in CAPACITY:
 		if _active[i] == 0:
 			continue
@@ -235,6 +239,8 @@ func tick(stage_time: float, delta: float) -> void:
 		_flash[i] = maxf(_flash[i] - delta, 0.0)
 		if age > 1.0 and not leave_area.has_point(_positions[i]):
 			_active[i] = 0
+		else:
+			_live.append(i)
 	var e := 0
 	while e < _explosions.size():
 		_explosions[e].z += delta
@@ -321,16 +327,17 @@ func active_count() -> int:
 ## Live enemies, for contact checks.
 func alive_indices() -> PackedInt32Array:
 	var alive := PackedInt32Array()
-	for i: int in CAPACITY:
+	for i: int in _live:
 		if is_alive(i):
 			alive.append(i)
 	return alive
 
 
 ## The first live enemy touching the segment `from`-`to` (a bullet's path this
-## tick), skipping `ignore`. Returns its pool index or -1.
+## tick), skipping `ignore`. Returns its pool index or -1. Only looks at the
+## enemies alive at the last tick() (killed ones are skipped).
 func find_hit_on_path(from: Vector2, to: Vector2, bullet_radius: float, ignore: int = -1) -> int:
-	for i: int in CAPACITY:
+	for i: int in _live:
 		if i == ignore or not is_alive(i):
 			continue
 		var reach := EnemyTypes.ALL[_types[i]].radius + bullet_radius
@@ -367,6 +374,7 @@ func flash(index: int) -> void:
 
 func clear() -> void:
 	_active.fill(0)
+	_live.clear()
 	_explosions.clear()
 	queue_redraw()
 

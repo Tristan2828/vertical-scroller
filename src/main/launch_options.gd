@@ -16,6 +16,8 @@ extends RefCounted
 ##   --weak-bosses                bosses have 2% HP (test the stage ending quickly)
 ##   --invincible                 hits still land and count, but HP refills at once
 ##   --perf-log                   every second: fps, worst frame, step timings, memory, objects
+##   --ship=<n>                   fly this ship (Ships.ALL index: 0 Striker, 1 Lancer, 2 Hornet,
+##                                3 Vulcan, 4 Wave); picked in the lobby by itself
 ##   --screenshot-dir=<folder>    save PNGs: title menu, lobby, gameplay, pause menu, settings
 ##                                (needs a real window, not --headless)
 ##   --window=<width>x<height>    windowed at this size (ignores the fullscreen setting)
@@ -36,6 +38,8 @@ static var autopilot: bool = false
 static var run_for_seconds: float = 0.0
 static var start_at_seconds: float = 0.0
 static var weak_bosses: bool = false
+## --ship: Ships.ALL index, -1 = the lobby's choice.
+static var ship: int = -1
 static var invincible: bool = false
 static var screenshot_dir: String = ""
 ## Zero = use the fullscreen setting.
@@ -73,6 +77,8 @@ static func parse(args: PackedStringArray) -> void:
 			invincible = true
 		elif arg == "--perf-log":
 			PerfLog.enabled = true
+		elif arg.begins_with("--ship="):
+			ship = arg.trim_prefix("--ship=").to_int()
 		elif arg.begins_with("--screenshot-dir="):
 			screenshot_dir = arg.trim_prefix("--screenshot-dir=")
 		elif arg.begins_with("--window="):

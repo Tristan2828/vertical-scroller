@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="ShipStats" format=3]
+
+[ext_resource type="Script" path="res://src/player/ship_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Wave"
+blurb = "Wide arcs that cover the screen but hit weakly; focus: a strong wall."
+sprite = "ship_wave"
+max_hp = 100
+move_speed = 230.0
+focus_speed = 110.0
+hitbox_radius = 2.5
+body_radius = 12.0
+gun_pattern = 15
+focus_pattern = 1
+fire_interval = 0.18
+focus_fire_interval = 0.1
+bullet_speed = 480.0
+bullet_damage = 5
+focus_bullet_damage = 8
+muzzle_offset = Vector2(0, -8)
+spread_streams = Array[int]([7, 9, 9, 11, 13])
+focus_streams = Array[int]([4, 5, 5, 6, 7])
+pierce = 1

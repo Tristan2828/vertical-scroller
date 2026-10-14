@@ -4,4 +4,8 @@ extends RefCounted
 
 const ALL: Array[ShipStats] = [
 	preload("res://src/player/ships/striker.tres"),
+	preload("res://src/player/ships/lancer.tres"),
+	preload("res://src/player/ships/hornet.tres"),
+	preload("res://src/player/ships/vulcan.tres"),
+	preload("res://src/player/ships/wave.tres"),
 ]

@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_stats")
 display_name = "Striker"
+blurb = "Spread shot; focus: twin streams."
 sprite = "ship"
 max_hp = 100
 move_speed = 240.0

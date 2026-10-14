@@ -18,6 +18,7 @@ enum Id {
 	SHIP_SPREAD, SHIP_FOCUS,
 	AIMED, AIMED_FAN_3, AIMED_FAN_5, BURST_3, RING_12, DOWN_SPREAD_3,
 	RING_24, SPIRAL, AIMED_LINE_5, SPRAY,
+	PARALLEL_WIDE, PARALLEL_TIGHT, VULCAN_SWEEP, WAVE_ARC,
 }
 
 ## What stage files call them (boss_step lines), in Id order.
@@ -25,7 +26,11 @@ const NAMES: Array[String] = [
 	"ship_spread", "ship_focus",
 	"aimed", "aimed_fan_3", "aimed_fan_5", "burst_3", "ring_12", "down_spread_3",
 	"ring_24", "spiral", "aimed_line_5", "spray",
+	"parallel_wide", "parallel_tight", "vulcan_sweep", "wave_arc",
 ]
+## The patterns ships fire (the rest are enemy patterns).
+const SHIP_PATTERNS: Array[Id] = [Id.SHIP_SPREAD, Id.SHIP_FOCUS, Id.PARALLEL_WIDE, Id.PARALLEL_TIGHT,
+	Id.VULCAN_SWEEP, Id.WAVE_ARC]
 
 const STRIDE: int = 5
 ## SHIP_SPREAD: angle and start offset of each pair of side streams, inner first.
@@ -39,6 +44,14 @@ const MEDIUM: float = 150.0
 const FAST: float = 190.0
 const SPIRAL_BULLETS: int = 36
 const SPIRAL_INTERVAL: float = 0.07
+## PARALLEL_WIDE / PARALLEL_TIGHT: gap between neighbouring streams.
+const WIDE_GAP: float = 10.0
+const TIGHT_GAP: float = 5.0
+## VULCAN_SWEEP: how far the streams swing side to side, and how fast (per input tick).
+const SWEEP_DEGREES: float = 9.0
+const SWEEP_RATE: float = 0.2
+## WAVE_ARC: half the arc's width.
+const ARC_DEGREES: float = 35.0
 
 
 ## A seed both the host and the shooting client can compute on their own.
@@ -48,7 +61,7 @@ static func make_seed(peer_id: int, input_seq: int) -> int:
 
 ## True for patterns players shoot (the rest are enemy patterns).
 static func is_ship_pattern(pattern: int) -> bool:
-	return pattern == Id.SHIP_SPREAD or pattern == Id.SHIP_FOCUS
+	return SHIP_PATTERNS.has(pattern)
 
 
 static func from_name(pattern_name: String) -> int:
@@ -77,6 +90,25 @@ static func build(pattern: Id, aim: float, seed_value: int, count: int = 0, base
 			var streams := maxi(count, 2)
 			for i: int in streams:
 				_add(out, aim, base_speed, 0.0, across * (i - (streams - 1) / 2.0) * FOCUS_GAP)
+		Id.PARALLEL_WIDE, Id.PARALLEL_TIGHT:
+			# `count` straight streams side by side (1 or more).
+			var streams := maxi(count, 1)
+			var gap := WIDE_GAP if pattern == Id.PARALLEL_WIDE else TIGHT_GAP
+			for i: int in streams:
+				_add(out, aim, base_speed, 0.0, across * (i - (streams - 1) / 2.0) * gap)
+		Id.VULCAN_SWEEP:
+			# Streams that swing side to side together. The swing comes from the
+			# input number inside the seed (make_seed), so every peer agrees.
+			var streams := maxi(count, 2)
+			var swing := deg_to_rad(SWEEP_DEGREES) * sin(float(seed_value % 1_000_003) * SWEEP_RATE)
+			for i: int in streams:
+				_add(out, aim + swing, base_speed, 0.0, across * (i - (streams - 1) / 2.0) * TIGHT_GAP)
+		Id.WAVE_ARC:
+			# `count` bullets spread evenly over a wide arc.
+			var bullets := maxi(count, 3)
+			for i: int in bullets:
+				var t := float(i) / (bullets - 1) * 2.0 - 1.0
+				_add(out, aim + t * deg_to_rad(ARC_DEGREES), base_speed, 0.0)
 		Id.AIMED:
 			_add(out, aim, MEDIUM, 0.0)
 		Id.AIMED_FAN_3:

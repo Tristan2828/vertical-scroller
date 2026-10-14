@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="ShipStats" format=3]
+
+[ext_resource type="Script" path="res://src/player/ship_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Hornet"
+blurb = "Light twin guns plus homing missiles. Fast, fragile."
+sprite = "ship_hornet"
+max_hp = 80
+move_speed = 270.0
+focus_speed = 120.0
+hitbox_radius = 2.0
+body_radius = 9.0
+gun_pattern = 12
+focus_pattern = 13
+fire_interval = 0.1
+focus_fire_interval = 0.0833
+bullet_speed = 620.0
+bullet_damage = 4
+focus_bullet_damage = 6
+muzzle_offset = Vector2(0, -8)
+spread_streams = Array[int]([2, 2, 2, 3, 3])
+focus_streams = Array[int]([2, 2, 3, 3, 3])
+bolt_style = 2
+focus_bolt_style = 2
+missiles = Array[int]([2, 2, 4, 4, 6])
+missile_chance = 0.35
+missile_damage = 10
+missile_speed = 360.0
+missile_turn = 5.0

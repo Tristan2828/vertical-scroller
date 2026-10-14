@@ -5,7 +5,6 @@ extends Control
 ## host's invite. The host owns the state (LobbyState) and sends
 ## it to everyone; clients ask the host to change their ship or ready flag.
 ## Trimmed from Medieval Survival's lobby: no hero picker or difficulty pages.
-## The ship pick is a placeholder until there's a second ship.
 ## Spawned by Main's LevelSpawner on every peer, like the stage.
 
 ## Host: Start was pressed with everyone ready.
@@ -55,6 +54,8 @@ func _ready() -> void:
 		_notify_ready.rpc_id(1)
 		_ready_button.grab_focus()
 	Net.names_changed.connect(_refresh)
+	if LaunchOptions.ship >= 0 and LaunchOptions.ship < Ships.ALL.size():
+		_choose_ship_locally(LaunchOptions.ship)
 	_refresh()
 
 
@@ -185,10 +186,21 @@ func _refresh_party() -> void:
 		name_label.add_theme_color_override("font_color", PlayerNames.color_of(slot))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
-		var ship_label := Label.new()
-		ship_label.text = Ships.ALL[_state.ships[peer_id]].display_name
-		ship_label.add_theme_color_override("font_color", DIM_COLOR)
-		row.add_child(ship_label)
+		var ship: int = _state.ships[peer_id]
+		if peer_id == me:
+			var ship_button := Button.new()
+			ship_button.text = Ships.ALL[ship].display_name
+			ship_button.tooltip_text = Ships.ALL[ship].blurb
+			ship_button.custom_minimum_size = Vector2(64, 0)
+			ship_button.pressed.connect(func() -> void: _choose_ship_locally((ship + 1) % Ships.ALL.size()))
+			row.add_child(ship_button)
+		else:
+			var ship_label := Label.new()
+			ship_label.text = Ships.ALL[ship].display_name
+			ship_label.custom_minimum_size = Vector2(64, 0)
+			ship_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			ship_label.add_theme_color_override("font_color", DIM_COLOR)
+			row.add_child(ship_label)
 		var special: int = _state.specials.get(peer_id, Specials.Kind.MEGA_BOMB)
 		if peer_id == me:
 			var special_button := Button.new()
@@ -218,6 +230,17 @@ func _refresh_party() -> void:
 			ready_label.add_theme_color_override("font_color", DIM_COLOR)
 		row.add_child(ready_label)
 		_party.add_child(row)
+
+
+func _choose_ship_locally(ship: int) -> void:
+	if multiplayer.is_server():
+		if _state.choose(1, ship):
+			_broadcast()
+	else:
+		_state.choose(multiplayer.get_unique_id(), ship)
+		_party_signature = ""
+		_refresh()
+		_request_ship.rpc_id(1, ship)
 
 
 func _choose_special_locally(special: int) -> void:
@@ -279,6 +302,12 @@ func _broadcast() -> void:
 func _notify_ready() -> void:
 	if multiplayer.is_server():
 		_ready_peers[multiplayer.get_remote_sender_id()] = true
+		_broadcast()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_ship(ship: int) -> void:
+	if multiplayer.is_server() and _state.choose(multiplayer.get_remote_sender_id(), ship):
 		_broadcast()
 
 

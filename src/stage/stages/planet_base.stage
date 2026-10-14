@@ -8,12 +8,12 @@ length = 240
 scroll_speed = 60
 
 # --- Intro (0-20 s): popcorn drones, the base's outer fence ---
-wave 3    drone s_curve x=300 count=6 spacing=0.35
-wave 7    drone s_curve x=660 count=6 spacing=0.35 mirror
+wave 3    drone s_curve x=300 count=10 spacing=0.26
+wave 7    drone s_curve x=660 count=10 spacing=0.26 mirror
 ground 8  turret x=160
 ground 9  turret x=800
-wave 11   drone straight x=240 count=5 spacing=0.3 dx=120
-wave 14   drone straight x=720 count=5 spacing=0.3 dx=-120
+wave 11   drone straight x=240 count=8 spacing=0.22 dx=75
+wave 14   drone straight x=720 count=8 spacing=0.22 dx=-75
 ground 15 bunker x=480
 wave 17   fighter dive_retreat x=320
 wave 17   fighter dive_retreat x=640 mirror
@@ -23,26 +23,26 @@ ground 20 turret x=120
 ground 20 turret x=840
 ground 23 radar x=300
 ground 24 turret x=620
-wave 22   drone circle_strafe x=220 count=5 spacing=0.4
-wave 26   drone circle_strafe x=740 count=5 spacing=0.4 mirror
+wave 22   drone circle_strafe x=220 count=8 spacing=0.3
+wave 26   drone circle_strafe x=740 count=8 spacing=0.3 mirror
 ground 28 heavy_turret x=480
 wave 30   fighter dive_retreat x=200 variant=a1
 wave 30   fighter dive_retreat x=480 variant=a1
 wave 30   fighter dive_retreat x=760 mirror variant=a1
 wave 30   kamikaze straight x=300 count=4 spacing=0.6 dx=120 variant=a2
-wave 33   drone cross_screen x=-20 y=90 count=6 spacing=0.3
+wave 33   drone cross_screen x=-20 y=90 count=10 spacing=0.22
 ground 34 tank x=200
 ground 35 tank x=260
 ground 36 turret x=880
-wave 38   drone cross_screen x=980 y=140 count=6 spacing=0.3 mirror
+wave 38   drone cross_screen x=980 y=140 count=10 spacing=0.22 mirror
 ground 40 bunker x=160
 ground 40 bunker x=800
 wave 42   fighter s_curve x=480 count=3 spacing=0.8
 wave 46   kamikaze straight x=180 count=3 spacing=0.5 dx=300
 ground 47 turret x=360
 ground 47 turret x=600
-wave 50   drone s_curve x=300 count=8 spacing=0.25 pace=1.3
-wave 52   drone s_curve x=660 count=8 spacing=0.25 pace=1.3 mirror
+wave 50   drone s_curve x=300 count=13 spacing=0.19 pace=1.3
+wave 52   drone s_curve x=660 count=13 spacing=0.19 pace=1.3 mirror
 ground 54 radar x=700
 ground 55 heavy_turret x=220
 
@@ -50,24 +50,24 @@ ground 55 heavy_turret x=220
 wave 60   gunship hover_leave x=480
 ground 61 turret x=100
 ground 61 turret x=860
-wave 64   drone straight x=120 count=4 spacing=0.4 dx=60
-wave 64   drone straight x=840 count=4 spacing=0.4 dx=-60
+wave 64   drone straight x=120 count=6 spacing=0.3 dx=38
+wave 64   drone straight x=840 count=6 spacing=0.3 dx=-38
 ground 66 bunker x=300
 ground 66 bunker x=660
 wave 70   fighter circle_strafe x=300 count=2 spacing=1.2
 wave 70   fighter circle_strafe x=660 count=2 spacing=1.2 mirror
 ground 72 heavy_turret x=480
 wave 75   kamikaze straight x=240 count=5 spacing=0.4 dx=120 variant=b1
-wave 75   drone dive_retreat x=200 count=4 spacing=0.5 dx=180 variant=b2
+wave 75   drone dive_retreat x=200 count=6 spacing=0.38 dx=112 variant=b2
 ground 78 tank x=140
 ground 79 tank x=820 mirror
-wave 80   drone cross_screen x=-20 y=70 count=8 spacing=0.25
+wave 80   drone cross_screen x=-20 y=70 count=13 spacing=0.19
 wave 83   fighter dive_retreat x=360
 wave 84   fighter dive_retreat x=600 mirror
 ground 85 radar x=200
 ground 86 turret x=480
-wave 88   drone s_curve x=240 count=6 spacing=0.3
-wave 88   drone s_curve x=720 count=6 spacing=0.3 mirror
+wave 88   drone s_curve x=240 count=10 spacing=0.22
+wave 88   drone s_curve x=720 count=10 spacing=0.22 mirror
 ground 92 bunker x=480
 ground 93 turret x=280
 ground 93 turret x=680
@@ -85,8 +85,8 @@ ground 113 tank x=420
 ground 114 tank x=420
 ground 112 turret x=200
 ground 112 turret x=760
-wave 112  drone cross_screen x=-20 y=100 count=6 spacing=0.3
-wave 116  drone cross_screen x=980 y=60 count=6 spacing=0.3 mirror
+wave 112  drone cross_screen x=-20 y=100 count=10 spacing=0.22
+wave 116  drone cross_screen x=980 y=60 count=10 spacing=0.22 mirror
 wave 120  fighter dive_retreat x=240
 wave 120  fighter dive_retreat x=720 mirror
 ground 122 bunker x=180
@@ -98,30 +98,30 @@ wave 132  kamikaze straight x=160 count=6 spacing=0.4 dx=128
 ground 134 radar x=480
 
 # --- Inner base (140-200 s): denser turrets, everything at once ---
-wave 141  drone circle_strafe x=180 count=6 spacing=0.35 variant=c1
-wave 141  drone circle_strafe x=780 count=6 spacing=0.35 mirror variant=c1
+wave 141  drone circle_strafe x=180 count=10 spacing=0.26 variant=c1
+wave 141  drone circle_strafe x=780 count=10 spacing=0.26 mirror variant=c1
 wave 141  fighter s_curve x=480 count=4 spacing=0.7 variant=c2
 wave 141  gunship hover_leave x=480 variant=c3
 ground 142 heavy_turret x=300
 ground 142 heavy_turret x=660
 ground 145 turret x=120
 ground 146 turret x=840
-wave 148  drone straight x=200 count=6 spacing=0.25 dx=112
+wave 148  drone straight x=200 count=10 spacing=0.19 dx=70
 wave 152  fighter dive_retreat x=300
 wave 152  fighter dive_retreat x=660 mirror
 ground 154 bunker x=480
 ground 156 tank x=200
 ground 157 tank x=760 mirror
 wave 158  kamikaze straight x=300 count=4 spacing=0.5 dx=120
-wave 162  drone s_curve x=300 count=8 spacing=0.25 pace=1.3
-wave 162  drone s_curve x=660 count=8 spacing=0.25 pace=1.3 mirror
+wave 162  drone s_curve x=300 count=13 spacing=0.19 pace=1.3
+wave 162  drone s_curve x=660 count=13 spacing=0.19 pace=1.3 mirror
 ground 164 radar x=160
 ground 164 radar x=800
 ground 166 heavy_turret x=480
 wave 168  gunship hover_leave x=300
 wave 168  gunship hover_leave x=660 mirror
-wave 174  drone cross_screen x=-20 y=80 count=8 spacing=0.25
-wave 176  drone cross_screen x=980 y=130 count=8 spacing=0.25 mirror
+wave 174  drone cross_screen x=-20 y=80 count=13 spacing=0.19
+wave 176  drone cross_screen x=980 y=130 count=13 spacing=0.19 mirror
 ground 178 turret x=240
 ground 178 turret x=480
 ground 178 turret x=720
@@ -139,17 +139,87 @@ wave 202  fighter dive_retreat x=480
 wave 202  fighter dive_retreat x=760 mirror
 ground 205 radar x=480
 wave 208  gunship hover_leave x=480
-wave 210  drone s_curve x=240 count=6 spacing=0.3
-wave 210  drone s_curve x=720 count=6 spacing=0.3 mirror
+wave 210  drone s_curve x=240 count=10 spacing=0.22
+wave 210  drone s_curve x=720 count=10 spacing=0.22 mirror
 ground 212 bunker x=160
 ground 212 bunker x=800
 ground 214 turret x=360
 ground 214 turret x=600
 wave 218  kamikaze straight x=240 count=5 spacing=0.4 dx=120
-wave 222  drone circle_strafe x=300 count=6 spacing=0.35
-wave 222  drone circle_strafe x=660 count=6 spacing=0.35 mirror
+wave 222  drone circle_strafe x=300 count=10 spacing=0.26
+wave 222  drone circle_strafe x=660 count=10 spacing=0.26 mirror
 ground 224 heavy_turret x=480
 wave 228  fighter s_curve x=480 count=4 spacing=0.6
+
+# --- Swarm layer (busier screen; playtest 1, 2026-10-13) ---
+# An extra wave every 7 s on top of the sections above, and an extra ground
+# target every 7 s. Tune or delete lines here to change how busy the stage is.
+# (Ground lines are appended at the end so the ground ids above don't change.)
+wave 6    drone s_curve x=250 count=8 spacing=0.25 pace=1.2
+wave 13   drone straight x=860 count=6 spacing=0.2 dx=-130
+wave 20   drone cross_screen x=-20 y=134 count=8 spacing=0.22
+wave 27   drone circle_strafe x=760 count=6 spacing=0.3 mirror
+wave 34   drone dive_retreat x=200 count=5 spacing=0.3 dx=140
+wave 41   kamikaze straight x=810 count=3 spacing=0.5 dx=-220
+wave 48   drone s_curve x=250 count=10 spacing=0.2 pace=1.4
+wave 55   fighter dive_retreat x=640 count=2 spacing=0.6 dx=-160
+wave 62   drone s_curve x=710 count=8 spacing=0.25 pace=1.2 mirror
+wave 69   drone straight x=100 count=6 spacing=0.2 dx=130
+wave 76   drone cross_screen x=980 y=100 count=8 spacing=0.22 mirror
+wave 83   drone circle_strafe x=200 count=6 spacing=0.3
+wave 90   drone dive_retreat x=760 count=5 spacing=0.3 dx=-140
+wave 97   kamikaze straight x=150 count=3 spacing=0.5 dx=220
+wave 104  drone s_curve x=710 count=10 spacing=0.2 pace=1.4 mirror
+wave 111  fighter dive_retreat x=320 count=2 spacing=0.6 dx=160
+wave 118  drone s_curve x=250 count=8 spacing=0.25 pace=1.2
+wave 125  drone straight x=860 count=6 spacing=0.2 dx=-130
+wave 132  drone cross_screen x=-20 y=66 count=8 spacing=0.22
+wave 139  drone circle_strafe x=760 count=6 spacing=0.3 mirror
+wave 146  drone dive_retreat x=200 count=5 spacing=0.3 dx=140
+wave 153  kamikaze straight x=810 count=3 spacing=0.5 dx=-220
+wave 160  drone s_curve x=250 count=10 spacing=0.2 pace=1.4
+wave 167  fighter dive_retreat x=640 count=2 spacing=0.6 dx=-160
+wave 174  drone s_curve x=710 count=8 spacing=0.25 pace=1.2 mirror
+wave 181  drone straight x=100 count=6 spacing=0.2 dx=130
+wave 188  drone cross_screen x=980 y=142 count=8 spacing=0.22 mirror
+wave 195  drone circle_strafe x=200 count=6 spacing=0.3
+wave 202  drone dive_retreat x=760 count=5 spacing=0.3 dx=-140
+wave 209  kamikaze straight x=150 count=3 spacing=0.5 dx=220
+wave 216  drone s_curve x=710 count=10 spacing=0.2 pace=1.4 mirror
+wave 223  fighter dive_retreat x=320 count=2 spacing=0.6 dx=160
+wave 230  drone s_curve x=250 count=8 spacing=0.25 pace=1.2
+ground 12   turret x=140
+ground 19   turret x=820
+ground 26   tank x=380
+ground 33   heavy_turret x=580
+ground 40   turret x=240
+ground 47   radar x=720
+ground 54   bunker x=480
+ground 61   turret x=900
+ground 68   turret x=60
+ground 75   tank x=140
+ground 82   heavy_turret x=820
+ground 89   turret x=380
+ground 96   radar x=580
+ground 103  bunker x=240
+ground 110  turret x=720
+ground 117  turret x=480
+ground 124  tank x=900 mirror
+ground 131  heavy_turret x=60
+ground 138  turret x=140
+ground 145  radar x=820
+ground 152  bunker x=380
+ground 159  turret x=580
+ground 166  turret x=240
+ground 173  tank x=720 mirror
+ground 180  heavy_turret x=480
+ground 187  turret x=900
+ground 194  radar x=60
+ground 201  bunker x=140
+ground 208  turret x=820
+ground 215  turret x=380
+ground 222  tank x=580 mirror
+ground 229  heavy_turret x=240
 
 # --- Boss (from 240 s): the base's command gunship. The scroll stops. ---
 # Phase 1: aimed fans from the wing guns, a spinning ring, bursts at each ship.

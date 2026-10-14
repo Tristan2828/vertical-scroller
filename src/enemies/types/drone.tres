@@ -14,3 +14,7 @@ scrap = 1
 orb_chance = 0.04
 boost_chance = 0.0
 charge_chance = 0.0
+shot_pattern = 2
+fire_interval = 3.5
+first_shot_delay = 1.4
+bullet_damage = 8

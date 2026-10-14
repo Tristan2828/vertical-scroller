@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="ShipStats" format=3]
+
+[ext_resource type="Script" path="res://src/player/ship_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Vulcan"
+blurb = "Very fast guns that sweep side to side; focus: a tight hose."
+sprite = "ship_vulcan"
+max_hp = 100
+move_speed = 240.0
+focus_speed = 105.0
+hitbox_radius = 2.5
+body_radius = 10.0
+gun_pattern = 14
+focus_pattern = 13
+fire_interval = 0.06
+focus_fire_interval = 0.05
+bullet_speed = 700.0
+bullet_damage = 4
+focus_bullet_damage = 5
+muzzle_offset = Vector2(0, -9)
+spread_streams = Array[int]([2, 2, 3, 3, 4])
+focus_streams = Array[int]([2, 2, 3, 3, 4])
+bolt_style = 2
+focus_bolt_style = 2

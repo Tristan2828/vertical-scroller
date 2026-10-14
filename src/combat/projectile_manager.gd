@@ -15,6 +15,15 @@ extends Node2D
 ## bullets are visual: they vanish on contact, but the host decides the hits.
 
 const CAPACITY: int = 4096
+## Homing bullets only steer toward enemies this close.
+const HOMING_RANGE: float = 300.0
+
+## How a bullet looks. STANDARD is this pool's own look (bolt_size or disc).
+enum Style { STANDARD, HEAVY, THIN, MISSILE }
+const HEAVY_SIZE: Vector2i = Vector2i(5, 13)
+const THIN_SIZE: Vector2i = Vector2i(2, 7)
+const MISSILE_GLOW: Color = Color(1.0, 0.55, 0.2, 0.8)
+const MISSILE_CORE: Color = Color(1.0, 0.95, 0.7)
 
 ## A bullet hit something here (for sparks). Emitted on every peer.
 signal hit_at(at: Vector2)
@@ -48,6 +57,12 @@ var _owners: PackedInt32Array = PackedInt32Array()
 var _pierce: PackedInt32Array = PackedInt32Array()
 ## Pool index of the enemy last hit, so a piercing bullet doesn't hit it again next tick.
 var _last_hit: PackedInt32Array = PackedInt32Array()
+## Style of each bullet.
+var _styles: PackedByteArray = PackedByteArray()
+## How fast each bullet turns toward enemies, radians per second (missiles).
+var _homing: PackedFloat32Array = PackedFloat32Array()
+## True once any homing bullet was spawned, so steer() costs nothing without them.
+var _any_homing: bool = false
 
 
 func _init() -> void:
@@ -59,12 +74,14 @@ func _init() -> void:
 	_owners.resize(CAPACITY)
 	_pierce.resize(CAPACITY)
 	_last_hit.resize(CAPACITY)
+	_styles.resize(CAPACITY)
+	_homing.resize(CAPACITY)
 
 
 ## Returns false if the pool is full.
 ## `start_age` < 0 delays the bullet; > 0 starts it partway along its path.
 func spawn(origin: Vector2, velocity: Vector2, damage: int, lifetime: float, owner_peer_id: int,
-		pierce: int = 0, start_age: float = 0.0) -> bool:
+		pierce: int = 0, start_age: float = 0.0, style: Style = Style.STANDARD, homing: float = 0.0) -> bool:
 	if _count >= CAPACITY:
 		return false
 	_origins[_count] = origin
@@ -75,6 +92,9 @@ func spawn(origin: Vector2, velocity: Vector2, damage: int, lifetime: float, own
 	_owners[_count] = owner_peer_id
 	_pierce[_count] = pierce
 	_last_hit[_count] = -1
+	_styles[_count] = style
+	_homing[_count] = homing
+	_any_homing = _any_homing or homing > 0.0
 	_count += 1
 	return true
 
@@ -105,6 +125,38 @@ func step(delta: float) -> void:
 		else:
 			i += 1
 	queue_redraw()
+
+
+## Turns homing bullets toward the nearest live air enemy (copied from Medieval
+## Survival). Every peer runs it with the enemies it knows about (clients'
+## bullets only show hits anyway). Velocity changes, so the origin is moved to
+## keep position = origin + velocity * age.
+func steer(enemies: EnemyManager, delta: float) -> void:
+	if not _any_homing:
+		return
+	var any_left := false
+	var alive := enemies.alive_indices()
+	for i: int in _count:
+		if _homing[i] <= 0.0:
+			continue
+		any_left = true
+		if _ages[i] < 0.0:
+			continue
+		var point := position_of(i)
+		var best := Vector2.INF
+		var best_distance := HOMING_RANGE * HOMING_RANGE
+		for index: int in alive:
+			var distance := point.distance_squared_to(enemies.position_of(index))
+			if distance < best_distance:
+				best_distance = distance
+				best = enemies.position_of(index)
+		if not best.is_finite():
+			continue
+		var max_turn := _homing[i] * delta
+		var turn := clampf(angle_difference(_velocities[i].angle(), (best - point).angle()), -max_turn, max_turn)
+		_velocities[i] = _velocities[i].rotated(turn)
+		_origins[i] = point - _velocities[i] * _ages[i]
+	_any_homing = any_left
 
 
 ## Removes bullets touching an air enemy, or else a ground object (or uses up
@@ -206,22 +258,27 @@ func clear_near(center: Vector2, radius: float) -> int:
 	return removed
 
 
-## One baked texture per bullet (batched into a single draw call); bullets off
-## screen are skipped.
+## One baked texture per bullet style (batched into a single draw call);
+## bullets off screen are skipped.
 func _draw() -> void:
-	var texture: Texture2D
+	var standard: Texture2D
 	if bolt_size != Vector2i.ZERO:
-		texture = PixelArt.bolt_texture(bolt_size, glow_color, core_color)
+		standard = PixelArt.bolt_texture(bolt_size, glow_color, core_color)
 	else:
-		texture = PixelArt.disc_texture(glow_radius, glow_color, core_radius, core_color)
-	var half := (Vector2(texture.get_size()) / 2.0).floor()
+		standard = PixelArt.disc_texture(glow_radius, glow_color, core_radius, core_color)
+	var textures: Array[Texture2D] = [standard, PixelArt.bolt_texture(HEAVY_SIZE, glow_color, core_color),
+		PixelArt.bolt_texture(THIN_SIZE, glow_color, core_color), PixelArt.disc_texture(3.0, MISSILE_GLOW, 1.5, MISSILE_CORE)]
+	var halves: Array[Vector2] = []
+	for texture: Texture2D in textures:
+		halves.append((Vector2(texture.get_size()) / 2.0).floor())
 	var view := PixelArt.visible_rect(self)
 	for i: int in _count:
 		if _ages[i] < 0.0:
 			continue
 		var point := position_of(i)
 		if view.has_point(point):
-			draw_texture(texture, (point - half).round())
+			var style := _styles[i]
+			draw_texture(textures[style], (point - halves[style]).round())
 
 
 ## Order doesn't matter, so fill the gap with the last bullet.
@@ -235,4 +292,6 @@ func _remove(index: int) -> void:
 	_owners[index] = _owners[last]
 	_pierce[index] = _pierce[last]
 	_last_hit[index] = _last_hit[last]
+	_styles[index] = _styles[last]
+	_homing[index] = _homing[last]
 	_count = last

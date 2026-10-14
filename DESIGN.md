@@ -13,7 +13,7 @@ Items marked **(draft)** are proposals written up from the Q&A that haven't been
 
 - **Pillars**
   1. **The world is the target.** You fly over facilities that shoot back, and you can wreck them. The background is half the level.
-  2. **Readable danger.** Sky Force-level bullet density: aimed shots and clear patterns, where danger comes from many sources at once rather than walls of bullets.
+  2. **A busy, readable screen.** Lots to shoot: big popcorn swarms, many ground targets, enemies that fire often. Bullets stay slow and readable (aimed shots, clear patterns): Sky Force turned up toward bullet hell, not walls of bullets (playtest 1).
   3. **Better with friends.** Online co-op for 1–4 players on one shared screen; solo is fully supported.
   4. **Simple hands.** The gun fires by itself. Move, focus, and one special button.
   5. **A different run each time, on familiar ground.** Hand-made stages that you learn; random shop offers, drops, wave variants and modifiers keep runs fresh.
@@ -86,7 +86,14 @@ The story escalates: hit the planet base, then the shipyard building the fleet, 
 ### Player ship
 - **HP bar** (Sky Force-style chip damage). Draft numbers: 100 HP, enemy bullets 8–20 damage, contact damage on collision, a short invulnerability blink after each hit.
 - **Hitbox** much smaller than the sprite (a few pixels), shown during focus.
-- **Ships are data:** main gun + stats (HP, speed, focus speed, hitbox) + sprite, like the heroes in Medieval Survival. **Start with 1 ship**; each later ship is mostly a new main gun, some numbers and a sprite.
+- **Ships are data:** main gun + stats (HP, speed, focus speed, hitbox) + sprite, like the heroes in Medieval Survival. Each ship is mostly a new main gun, some numbers and a sprite. **Five ships, all unlocked for testing** (playtest 1; unlocks come with permanent progression later):
+  | Ship | Main gun | Focus | Body |
+  |---|---|---|---|
+  | Striker | 3-way spread (up to 7) | twin streams | balanced |
+  | Lancer | heavy lances that pierce 2 enemies | one lance through 5 | tough (130 HP), slow |
+  | Hornet | light twin guns + homing missile volleys | tighter guns, same missiles | fragile (80 HP), fast, smallest hitbox |
+  | Vulcan | very fast streams that sweep side to side | a tight hose | balanced |
+  | Wave | wide arcs that cover the screen, weak, pierce 1 | a strong parallel wall | balanced |
 - In co-op, each player's ship is recolored per player (the `P`/`p` palette recolor trick from Medieval Survival).
 
 ### Main gun power
@@ -110,7 +117,7 @@ The story escalates: hit the planet base, then the shipyard building the fleet, 
 - **Waves are written as text data:** a library of **named path shapes** in code (S-curve, dive-and-retreat, circle-strafe, cross-screen, hover-and-leave...) and stage files that say *which shape, when, where, how many, which gun*. Easy for both the owner and Claude to edit.
 - **Ground objects** (destructible, Sky Force-style): turrets, tanks, bunkers and buildings placed in the stage map. They scroll with the background, shoot up, take hits, show a destroyed version, and drop currency. Drawn under the air layer, with a clear visual language: darker, desaturated ground, bright enemy bullets. **Staged rollout:** the first build has 2–3 turret types and a few buildings; each stage adds more.
 - Player bullets hit both air and ground.
-- **Bullet density: Sky Force level.**
+- **Density (playtest 1): busy + readable.** About 2x the air enemies of the first build (big drone swarms, a "swarm layer" of extra waves every 7 s in the stage file) and 1.5x the ground targets; drones fire slow aimed shots and everything else fires about 20% more often. Bullets stay slow.
 
 ### Bosses
 - Every stage ends in a boss; the final stage is a bigger multi-phase boss (the flagship's core).
@@ -139,7 +146,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - 1–4 players, one shared screen, one scroll speed.
 - **Death:** a downed ship respawns at the bottom of the screen **after a short delay** (draft: 3 s, with 2 s of invulnerability), using a **shared team pool of respawn credits** (draft: 3 per run; more can be bought in the shop). (Revive-by-hovering from Medieval Survival doesn't fit a scroller.)
 - A player who goes down with the pool empty spectates until the next stage (draft); the **run ends when every player is down with no credits left**.
-- **Scaling:** enemy and boss HP rise **partially** per extra player (draft: +60%, tuned in playtests); bullet patterns stay the same. Co-op-only bonus waves may come later as data.
+- **Scaling (playtest 1):** each extra player makes every wave bigger (draft: +35% enemies per extra player; the extra ones follow the formation) plus a small HP bump (+20%); the boss, which can't come in bigger numbers, gets +50% HP per extra player. Bullet patterns stay the same. Co-op-only bonus waves may come later as data.
 - Scrap is shared (§4); pickups such as power orbs and boosts go to whoever touches them (draft).
 
 ## 6. Art & audio
@@ -159,6 +166,8 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **2026-10-12:** M4 built (all numbers draft): the scroll stops at 4:00 and the Command Gunship (8000 HP, +60% per extra player) flies in with a two-phase attack script written in the stage file. Mega Bomb (1 charge: clears bullets, 250 damage to everything on screen) and Shield (3 charges: 3 s, eats bullets), picked in the lobby. Power levels 1–5 (3/5/5/7/7 spread streams, more damage at 3 and 5; dying costs a level). Rapid Fire and Wingmen boosts (12 s). Scrap into the shared team wallet (pulled in from 80 px; power-ups must be touched). Death: respawn after 3 s from a shared pool of 3 credits, 2 s of safety; game over when everyone is down with none left. Destructible boss parts are still to come.
 - **2026-10-12:** M5 built (all numbers draft): a run = Planet Base -> shop -> Planet Base again (enemy HP x1.3, guns 15% faster, a random twist) -> run summary. HP, power and upgrades carry over between stages; a ship shot down at the end comes back repaired. Results: stage goals (70% kills +30, all kills +60, no damage +50, all ground +50, boss under 60 s +40, twist +40) and 15 Scrap per unused special charge; score = kills (10 per Scrap value) + 500 per goal + 2000 for the boss; personal best per PC. Shop: the wallet is split evenly; 4 personal offers each (Power +1 40, Repair 25, Hull +20 50, Special +1 30, Swap special 20, Engines +8% 35) and 1 team offer (Spare ship 60, Rapid Fire start 45); Chip in gives a teammate 10 Scrap at a time (a simple version of chipping in to a purchase); a 60 s timer starts when half the team is ready; leftovers go back to the team. Twists: Armored Turrets (ground HP x1.6), Elite Wing (one wave of gold elites: x2.5 HP, faster guns, double Scrap); the first stage has none.
 
+- **2026-10-13: Playtest 1** (owner and friends, v0.0.5): wanted other ships and shot patterns to try, more enemies and things to shoot (lean toward bullet hell, but readable), bigger power-up icons, and co-op scaling that adds enemies rather than HP. Done in the same session: four new ships (Lancer, Hornet, Vulcan, Wave) picked in the lobby, about 2x the air enemies and 1.5x the ground targets, drones that shoot, faster enemy guns, 13 px power-up badges, co-op scaling by wave size. Performance measured with `--perf-log`: the stutter seen while playtesting came from the PC running out of memory, not the game (about 53 MB, ~2 ms ticks).
+
 ## 8. Decisions log (why)
 - **Pixel art over hi-res 2D or low-poly 3D:** it reuses the owner's gamekit pipeline, Claude can draw and edit it, and asset packs mix well under one palette. 3D (with Kenney/Quaternius CC0 kits) was the closest look to Sky Force, but it's the biggest effort and a second engine to learn.
 - **960x540 over 640x360:** a full-width vertical scroller needs vertical room; 360 px was too short. The cost is the 1440p scaling (solved by the Sharp/Pixel-perfect setting) and more pixels to draw per asset.
@@ -166,12 +175,13 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **Auto-fire setting instead of a fire button:** a toggle with no gameplay reason to stop firing is a button nobody presses.
 - **Charges per stage for specials:** easiest to read and balance, fair in co-op, and it gives the shop and pickups something to offer; the payout for unused charges fixes hoarding.
 - **Respawn with a shared pool instead of revive-by-hovering:** a downed ship in a scroller would drift off-screen or block a lane.
-- **Partial HP scaling:** adding more enemies would bury the shared screen under 4 players' shots.
+- **Co-op scaling by wave size (playtest 1, replaces "partial HP scaling"):** the first playtest wanted more on screen, so extra players now bring more enemies rather than tougher ones; a small HP bump keeps waves from melting, and the boss scales by HP because it's one enemy.
+- **Five ships unlocked for testing (playtest 1, replaces "start with 1 ship"):** the testers wanted to try different guns early.
+- **Busier screen (playtest 1, replaces "Sky Force-level density"):** the first stage felt empty; the screen fills up, but enemy bullets stay slow and readable.
 - **Scripted paths:** the genre's own approach; learnable; the cheapest and smoothest netcode.
 
 ## 9. Open questions
 - Exact numbers: HP, damage, power levels, charges, prices, respawn credits, HP scaling (all marked draft).
-- Main gun design of the first ship.
 - What happens to a player who goes down with no respawn credits left (spectate until the next stage?).
 - Power orbs and boosts in co-op: whoever touches them, or shared?
 - Boss designs for each stage.

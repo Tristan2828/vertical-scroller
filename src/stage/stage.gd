@@ -21,12 +21,17 @@ signal ended
 ## Sent over the network: only add new phases at the end.
 enum Phase { PLAYING, CLEAR, BOSS, GAME_OVER }
 
-## Extra enemy / ground HP per player beyond the first (DESIGN.md §5: partial scaling, draft).
-const HP_PER_EXTRA_PLAYER: float = 0.6
+## Co-op scaling (DESIGN.md §5, playtest 1): each player beyond the first adds
+## this much to every wave's size (more on screen), plus a small HP bump; the
+## boss can't come in bigger numbers, so it gets more HP instead. Draft numbers.
+const COUNT_PER_EXTRA_PLAYER: float = 0.35
+const HP_PER_EXTRA_PLAYER: float = 0.2
+const BOSS_HP_PER_EXTRA_PLAYER: float = 0.5
 const SHIP_START_Y: float = 460.0
 ## Ships start (and respawn) side by side, by slot.
 const SHIP_START_X: Array[float] = [420.0, 540.0, 300.0, 660.0]
 const BULLET_LIFETIME: float = 1.5
+const MISSILE_LIFETIME: float = 2.5
 const ENEMY_BULLET_LIFETIME: float = 6.0
 ## Shots from other players are fast-forwarded by how late they arrived, up to this.
 const MAX_SHOT_CATCH_UP: float = 0.3
@@ -244,6 +249,7 @@ func tick(delta: float) -> void:
 		_tick_respawns(all_ships, delta)
 	PerfLog.stop(&"host", t)
 	t = PerfLog.start()
+	player_bullets.steer(enemies, delta)
 	player_bullets.step(delta)
 	player_bullets.resolve_hits(enemies, ground, is_host)
 	enemy_bullets.step(delta)
@@ -313,9 +319,18 @@ func debug_report() -> String:
 	return "\n".join(lines)
 
 
+func _extra_players() -> int:
+	return maxi(ships().size() - 1, 0)
+
+
 ## Enemy HP: co-op scaling and the run's difficulty.
 func _hp_scale() -> float:
-	return (1.0 + HP_PER_EXTRA_PLAYER * maxi(ships().size() - 1, 0)) * difficulty
+	return (1.0 + HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty
+
+
+## How many enemies a wave of `count` has with this many players.
+func _wave_count(count: int) -> int:
+	return roundi(count * (1.0 + COUNT_PER_EXTRA_PLAYER * _extra_players()))
 
 
 func _ground_hp_scale() -> float:
@@ -447,16 +462,40 @@ func _spawn_shot(shooter_id: int, pattern: int, origin: Vector2, seed_value: int
 	var stats := shooter.stats if shooter != null else Ships.ALL[0]
 	var damage := ShipMotor.damage(stats, power, focus)
 	var streams := ShipMotor.streams(stats, power, focus)
+	var pierce := stats.focus_pierce if focus else stats.pierce
+	var style := (stats.focus_bolt_style if focus else stats.bolt_style) as ProjectileManager.Style
 	var bullets := ShotPatterns.build(pattern as ShotPatterns.Id, -PI / 2.0, seed_value, streams, stats.bullet_speed)
 	for i: int in range(0, bullets.size(), ShotPatterns.STRIDE):
 		var velocity := Vector2.from_angle(bullets[i]) * bullets[i + 1]
 		var offset := Vector2(bullets[i + 3], bullets[i + 4])
-		player_bullets.spawn(origin + offset, velocity, damage, BULLET_LIFETIME, shooter_id, 0, start_age - bullets[i + 2])
+		player_bullets.spawn(origin + offset, velocity, damage, BULLET_LIFETIME, shooter_id, pierce,
+			start_age - bullets[i + 2], style)
+	_spawn_missiles(shooter_id, stats, origin, seed_value, power, start_age)
 	if wingmen:
 		var up := Vector2(0.0, -stats.bullet_speed)
 		for side: float in [-1.0, 1.0]:
 			var drone := origin - stats.muzzle_offset + Vector2(side * Ship.WINGMAN_OFFSET.x, Ship.WINGMAN_OFFSET.y - 4.0)
 			player_bullets.spawn(drone, up, damage, BULLET_LIFETIME, shooter_id, 0, start_age)
+
+
+## Homing missiles (Hornet): some shots come with a volley, picked from the
+## shot's seed so every peer agrees which ones.
+func _spawn_missiles(shooter_id: int, stats: ShipStats, origin: Vector2, seed_value: int, power: int,
+		start_age: float) -> void:
+	var count: int = stats.missiles[clampi(power, 1, stats.missiles.size()) - 1]
+	if count <= 0:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	if rng.randf() >= stats.missile_chance:
+		return
+	var center := origin - stats.muzzle_offset
+	for i: int in count:
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var spread := 1.0 + floorf(i / 2.0) * 0.6
+		var direction := Vector2(side * 0.5 * spread, -1.0).normalized()
+		player_bullets.spawn(center + Vector2(side * 9.0, 2.0), direction * stats.missile_speed, stats.missile_damage,
+			MISSILE_LIFETIME, shooter_id, 0, start_age, ProjectileManager.Style.MISSILE, stats.missile_turn)
 
 
 # --- Specials ------------------------------------------------------------------
@@ -510,7 +549,8 @@ func _spawn_due_waves() -> void:
 		var elite := _next_wave == _elite_wave
 		_next_wave += 1
 		var indices := PackedInt32Array()
-		for i: int in wave.count:
+		# Extra co-op enemies follow the formation (same path, a little later).
+		for i: int in _wave_count(wave.count):
 			var origin := wave.origin + Vector2(wave.dx * i, 0.0)
 			var index := enemies.spawn(wave.type_id, wave.shape as PathShapes.Id, wave.time + i * wave.spacing, origin,
 				wave.mirror, wave.pace, _hp_scale(), elite)
@@ -691,7 +731,8 @@ func _on_pickup_collected(kind: int, value: int, peer_id: int) -> void:
 func _start_boss() -> void:
 	phase = Phase.BOSS
 	_boss_started_at = stage_time
-	var hp_scale := _hp_scale() * (WEAK_BOSS_HP if LaunchOptions.weak_bosses else 1.0)
+	var hp_scale := (1.0 + BOSS_HP_PER_EXTRA_PLAYER * _extra_players()) * difficulty
+	hp_scale *= WEAK_BOSS_HP if LaunchOptions.weak_bosses else 1.0
 	_boss_index = enemies.spawn(def.boss_type, PathShapes.Id.BOSS, stage_time, Vector2(def.boss_x, BOSS_START_Y),
 		false, 1.0, hp_scale)
 	_boss_max_hp = maxi(enemies.hp_of(_boss_index), 1) if _boss_index >= 0 else 1
