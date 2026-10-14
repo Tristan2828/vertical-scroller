@@ -138,7 +138,8 @@ Scrap (Sky Force's stars) is dropped by enemies and ground objects, paid for sta
 - **Ready-up:** the next stage starts when everyone is ready; a **60 s soft timer** starts once half the team is ready.
 
 ### Stage goals (Sky Force medals) + light score
-- Each stage has 3–4 goals that pay Scrap. Draft list: destroy 70% of enemies, destroy 100%, nobody on the team takes damage, destroy every ground structure, beat the boss within X s. Stage modifiers add a bonus goal.
+- Each stage has goals that pay Scrap. **Tiered goals (playtest 3, option A; draft numbers):** destroy 50 / 75 / 90% of the air enemies (+20 / +25 / +30) and 50 / 75 / 90% of the ground targets (+15 / +20 / +25); the tiers stack (90% also pays the 50% and 75% tiers); the team loses under 25% of its total HP (+40); beat the boss in under 90 s (+40); a stage with a twist adds "Beat the stage's twist" (+40). Unused special charges pay 15 each. The old goals (70% kills, 100% kills, no damage, every ground target) are retired: on the busier stage they were out of reach.
+- **Planned (owner, playtest 3): add medal challenges on top of the tiers (option B)**, so a stage pays both: 2–3 specific feats per stage for bigger payouts, e.g. destroy the tank convoy, take off every boss part before the core, no ships lost. Not built yet; each stage will need its own list. Check shop prices against what a normal run earns then (aim: 2–3 upgrades per shop).
 - A simple **score** (kills, ground objects, goals) and a **personal best** are shown on the results screen.
 - Later, goals may also earn permanent progression (like Sky Force's medals).
 
@@ -172,7 +173,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **2026-10-13: Playtest 1** (owner and friends, v0.0.5): wanted other ships and shot patterns to try, more enemies and things to shoot (lean toward bullet hell, but readable), bigger power-up icons, and co-op scaling that adds enemies rather than HP. Done in the same session: four new ships (Lancer, Hornet, Vulcan, Wave) picked in the lobby, about 2x the air enemies and 1.5x the ground targets, drones that shoot, faster enemy guns, 13 px power-up badges, co-op scaling by wave size. Performance measured with `--perf-log`: the stutter seen while playtesting came from the PC running out of memory, not the game (about 53 MB, ~2 ms ticks).
 
 - **2026-10-14: Playtest 2** (owner and friends, v0.0.6): the ships are good; enemies should be 15–20% harder; the boss should be harder and bigger, with destructible parts like Jamestown; the HUD at the bottom was in the way. Done: one global difficulty knob (enemy HP x1.15, guns firing ~11% more often), the HUD moved to the top-left, and the Stage 1 boss rebuilt as the multi-part Fortress Gunship (armored core, required wing cannons, missile pods, hangar, lasers, desperation). The fast-boss goal is now 90 s.
-- **Playtest 3** (owner, v0.0.8): the Fortress Gunship fight played great; only its look needed work. The HP bar should be red, and power level and special charges should be icons, filled or empty, instead of text. Done: the boss keeps its design, hitboxes and attacks but is now pixel art (steel plating, seams, rivets, red trim, lights; turret barrels that track the nearest ship, blinking launch tubes, sliding hangar doors, armor plates over the core that open into a pulsing eye, smoke on damaged parts); the HUD's top-left block has a red HP bar (blinks below 30%), 5 power arrows, bomb or shield icons for charges (used ones hollow) and boost icons with timer bars, on a dark panel. Open: how Scrap is earned (100% kills and all ground targets aren't realistic any more on the busier stage).
+- **Playtest 3** (owner, v0.0.8): the Fortress Gunship fight played great; only its look needed work. The HP bar should be red, and power level and special charges should be icons, filled or empty, instead of text. Done: the boss keeps its design, hitboxes and attacks but is now pixel art (steel plating, seams, rivets, red trim, lights; turret barrels that track the nearest ship, blinking launch tubes, sliding hangar doors, armor plates over the core that open into a pulsing eye, smoke on damaged parts); the HUD's top-left block has a red HP bar (blinks below 30%), 5 power arrows, bomb or shield icons for charges (used ones hollow) and boost icons with timer bars, on a dark panel. Scrap: 100% kills, all ground targets and no damage weren't realistic any more on the busier stage. Options were tiered goals (A), per-stage medal challenges (B), drops only (C) or A + B (D); the owner picked **A now, B added later** (§4 Stage goals).
 - **2026-10-14:** a "Boss only" mode in the lobby (host's switch) for testing bosses: every stage of the run starts just before its boss; the results, shop and summary still happen; it doesn't count toward the personal best.
 
 ## 8. Decisions log (why)
@@ -185,6 +186,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **Co-op scaling by wave size (playtest 1, replaces "partial HP scaling"):** the first playtest wanted more on screen, so extra players now bring more enemies rather than tougher ones; a small HP bump keeps waves from melting, and the boss scales by HP because it's one enemy.
 - **Five ships unlocked for testing (playtest 1, replaces "start with 1 ship"):** the testers wanted to try different guns early.
 - **Bosses made of parts with an armored core (playtest 2):** the testers wanted a bigger, harder boss; an armored core means size adds parts to destroy instead of making the boss easier to hit, and parts give the team choices (which part first, who takes which side).
+- **Tiered stage goals (playtest 3, replaces the 70% / 100% / no damage / all ground goals):** with ~570 air enemies and 98 ground targets per stage, all-or-nothing goals paid almost nothing; tiers always give the team a next step to aim for. Medal challenges come later for variety.
 - **Busier screen (playtest 1, replaces "Sky Force-level density"):** the first stage felt empty; the screen fills up, but enemy bullets stay slow and readable.
 - **Scripted paths:** the genre's own approach; learnable; the cheapest and smoothest netcode.
 
@@ -194,7 +196,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - Power orbs and boosts in co-op: whoever touches them, or shared?
 - Bosses 2–4: the ideas in §3 Bosses are only brainstormed.
 - HUD layout for 4 players on a full-width screen.
-- How Scrap is earned (playtest 3): the stage goals need rethinking now that 100% kills / all ground targets are out of reach.
+- Medal challenges for each stage (playtest 3 plan, §4 Stage goals): which feats, and their payouts.
 - Audio direction (synthwave, orchestral, chiptune...).
 - Whether to add 2D lighting.
 - The real name.

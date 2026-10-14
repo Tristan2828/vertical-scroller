@@ -64,26 +64,45 @@ func _stats() -> StageGoals.Stats:
 	stats.air_spawned = 100
 	stats.ground_total = 20
 	stats.damage_taken = 30
+	stats.team_max_hp = 100
 	return stats
 
 
 func test_goals_are_met_by_what_happened() -> void:
 	var stats := _stats()
-	stats.air_killed = 70
-	stats.ground_destroyed = 20
+	stats.air_killed = 80
+	stats.ground_destroyed = 10
 	stats.boss_seconds = 45.0
-	assert_eq(StageGoals.met(stats), [StageGoals.Id.KILLS_70, StageGoals.Id.ALL_GROUND, StageGoals.Id.FAST_BOSS] as Array[int])
+	# Tiers stack: 80% kills meets the 50% and 75% tiers.
+	assert_eq(StageGoals.met(stats), [StageGoals.Id.KILLS_50, StageGoals.Id.KILLS_75, StageGoals.Id.GROUND_50,
+		StageGoals.Id.FAST_BOSS] as Array[int])
+	stats.air_killed = 95
+	stats.ground_destroyed = 19
+	stats.damage_taken = 20
+	var goals := StageGoals.met(stats)
+	assert_true(goals.has(StageGoals.Id.KILLS_90))
+	assert_true(goals.has(StageGoals.Id.GROUND_90))
+	assert_true(goals.has(StageGoals.Id.LOW_DAMAGE))
+
+
+func test_retired_goals_are_never_met_or_shown() -> void:
+	var stats := _stats()
 	stats.air_killed = 100
+	stats.ground_destroyed = 20
 	stats.damage_taken = 0
-	assert_true(StageGoals.met(stats).has(StageGoals.Id.KILLS_100))
-	assert_true(StageGoals.met(stats).has(StageGoals.Id.NO_DAMAGE))
+	for goal: int in StageGoals.RETIRED:
+		assert_false(StageGoals.met(stats).has(goal))
+		assert_false(StageGoals.SHOWN.has(goal))
+	assert_eq(StageGoals.NAMES.size(), StageGoals.Id.size())
+	assert_eq(StageGoals.REWARDS.size(), StageGoals.Id.size())
+	assert_eq(StageGoals.SHOWN.size() + StageGoals.RETIRED.size(), StageGoals.Id.size())
 
 
 func test_payout_adds_goals_and_unused_charges() -> void:
 	var stats := _stats()
-	stats.air_killed = 70
+	stats.air_killed = 60
 	stats.unused_charges = 2
-	assert_eq(StageGoals.payout(stats), StageGoals.REWARDS[StageGoals.Id.KILLS_70] + 2 * StageGoals.CHARGE_PAYOUT)
+	assert_eq(StageGoals.payout(stats), StageGoals.REWARDS[StageGoals.Id.KILLS_50] + 2 * StageGoals.CHARGE_PAYOUT)
 
 
 func test_a_twist_is_a_bonus_goal() -> void:

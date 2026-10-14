@@ -420,6 +420,7 @@ func _spawn_ship(data: Variant) -> Node:
 		if downed.is_local():
 			hud.show_banner("Shot down!", 1.5))
 	ship.hurt.connect(func(_hurt: Ship, amount: int) -> void: stats.damage_taken += amount)
+	stats.team_max_hp += ship.health.max_hp
 	# The team's Rapid Fire from the shop, for the start of the stage.
 	ship.state.rapid_fire_left = RunState.current.team_rapid_fire
 	return ship

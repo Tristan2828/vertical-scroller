@@ -32,7 +32,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Per-player ship recolor.
 - **Done when:** a headless host + client on autopilot play the test wave together; the smoke test shows the client's shots damaging enemies on the host; two real windows on one PC play smoothly.
 
-## M3: Stage system ✅ (built 2026-10-12; the owner's playtest is still to come)
+## M3: Stage system ✅ (built 2026-10-12; played in playtests 1–3)
 - **Stage data:** a `StageDef` resource (length, scroll speed, background layers, wave list, ground objects, boss, music) + a wave format (`shape, time, x, count, spacing, enemy type, gun, variant group`).
 - **Path shape library:** S-curve, dive-and-retreat, circle-strafe, cross-screen, hover-and-leave; plus 2 homing types (kamikaze drone, tracking gunship).
 - **Enemy types as data** (HP, speed, sprite, gun pattern, drops); enemy shot patterns as events.
@@ -42,7 +42,7 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Partial co-op HP scaling.
 - **Done when:** a full ~4 minute Planet Base stage (gray-box art) plays start to finish, solo and online; tests cover wave timing, variants and path determinism.
 
-## M4: Boss, specials, pickups, death ✅ (built 2026-10-12; the owner's playtest is still to come)
+## M4: Boss, specials, pickups, death ✅ (built 2026-10-12; played in playtests 1–3)
 - Stage boss with an attack script (adapt `BossBrain` / `BossStep`), the scroll stopping for the boss, a boss HP bar.
 - Specials: **Mega Bomb** (1 charge) and **Shield** (3 charges); charges refill per stage.
 - Main gun power levels (1–5) from power orbs; 2 timed boosts (Rapid Fire, Wingmen).
@@ -50,8 +50,8 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Death → respawn after a delay from the **shared respawn credit pool**; run over when everyone is down with none left.
 - **Done when:** a stage can be won or lost solo and online; `--invincible` / `--weak-bosses` style flags speed up testing.
 
-## M5: Results, shop, loop — built 2026-10-12, waiting for the owner's playtest
-- Results screen: stage goals (70% kills, 100% kills, no damage, all ground structures, fast boss), score, Scrap earned, payout for unused charges, personal best.
+## M5: Results, shop, loop ✅ (built 2026-10-12; played in playtests 1–3, released up to v0.0.8)
+- Results screen: stage goals (since playtest 3: tiered kills and ground targets 50 / 75 / 90%, team loses under 25% HP, fast boss, twist), score, Scrap earned, payout for unused charges, personal best.
 - Shop: random offers (4 personal + 1 team), **equal split of the team wallet + Chip in**, ready-up with the 60 s soft timer. Copy ideas from `ShopController` / `ShopSession`.
 - Stage modifiers: 2 to start (Armored Turrets, Elite Wing).
 - For v0.1.0 the "run" is: Planet Base → shop → Planet Base again (harder) → run summary.
@@ -63,6 +63,12 @@ Each milestone ends with something you can run, and with tests and the smoke tes
 - Placeholder synth SFX/music (copy `Sfx` / `Music` / `Synth`).
 - Copy the updater, feedback screen, `release.ps1`, `docs/RELEASING.md`, the Discord workflow; `docs/PLAYTEST.md` checklist. **The owner decides** on creating the GitHub repo before anything is pushed.
 - **Done when:** v0.1.0 is built, released and played online by friends; playtest notes go into `DESIGN.md` §7.
+
+### Playtest changes so far (DESIGN.md §7)
+- Playtest 1 (v0.0.5): 5 ships unlocked, a busier stage, co-op scaling by wave size, bigger power-up icons.
+- Playtest 2 (v0.0.6): enemies ~18% harder, HUD at the top-left, the multi-part Fortress Gunship boss; then the lobby's Boss only mode (v0.0.8).
+- Playtest 3 (after v0.0.8, not released yet): boss pixel art (`BossArt` / `BossDraw`), HUD icons (red HP bar, power arrows, bomb / shield charges, boost timers), tiered stage goals.
+- Next small step: medal challenges per stage (option B, on top of the tiers).
 
 ## After v0.1.0
 1. Stage 2 (Orbital shipyard) and stage 3 (Capital ship surface) with their bosses.

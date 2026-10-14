@@ -113,7 +113,7 @@ func show_results(results: Dictionary, seconds: float) -> void:
 		child.queue_free()
 	_results_line("Stage clear!", TITLE_COLOR, 18)
 	var met: Array = results.get("goals", [])
-	for goal: int in StageGoals.Id.size():
+	for goal: int in StageGoals.SHOWN:
 		if goal == StageGoals.Id.TWIST and not met.has(goal):
 			continue  # Only stages with a twist have this goal.
 		var done := met.has(goal)
