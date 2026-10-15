@@ -247,6 +247,10 @@ func _report_and_quit() -> void:
 		print(scene.call("debug_report"))
 	else:
 		print("[report] peer %d: nothing loaded" % multiplayer.get_unique_id())
+	print("[report]   music: %s  (output device: %s, master %.0f dB, music %.0f dB, sfx %.0f dB)" % [
+		Music.now_playing() if not Music.now_playing().is_empty() else &"none", AudioServer.output_device,
+		AudioServer.get_bus_volume_db(0), AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Music")),
+		AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"SFX"))])
 	Net.leave_game()
 	get_tree().quit()
 
