@@ -27,6 +27,10 @@ var player_name: String = ""
 ## Remembered when the game closes, so moving the window there sticks.
 var screen: int = -1
 
+## Launch-flag overrides (--window, --scaling...) keep the saved value here, so
+## save() never writes a test run's override into the player's settings.
+var _kept: Dictionary[StringName, Variant] = {}
+
 
 func _enter_tree() -> void:
 	# The pixel font must be in place before any menu is created.
@@ -100,19 +104,30 @@ func load_settings() -> void:
 	screen = int(config.get_value("video", "screen", screen))
 
 
-func save() -> void:
+func save(path: String = PATH) -> void:
 	var config := ConfigFile.new()
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("audio", "sfx_volume", sfx_volume)
 	config.set_value("audio", "music_volume", music_volume)
-	config.set_value("video", "fullscreen", fullscreen)
-	config.set_value("video", "scaling_mode", scaling_mode)
-	config.set_value("controls", "fire_mode", fire_mode)
-	config.set_value("controls", "mouse_mode", mouse_mode)
+	config.set_value("video", "fullscreen", _saved(&"fullscreen"))
+	config.set_value("video", "scaling_mode", _saved(&"scaling_mode"))
+	config.set_value("controls", "fire_mode", _saved(&"fire_mode"))
+	config.set_value("controls", "mouse_mode", _saved(&"mouse_mode"))
 	config.set_value("video", "screen_shake", screen_shake)
 	config.set_value("player", "name", player_name)
 	config.set_value("video", "screen", screen)
-	config.save(PATH)
+	config.save(path)
+
+
+## For this run only (a launch flag): use `value`, but keep saving the old one.
+func override(setting: StringName, value: Variant) -> void:
+	if not _kept.has(setting):
+		_kept[setting] = get(setting)
+	set(setting, value)
+
+
+func _saved(setting: StringName) -> Variant:
+	return _kept.get(setting, get(setting))
 
 
 func shake_strength() -> float:
@@ -135,7 +150,9 @@ func apply() -> void:
 	AudioServer.set_bus_volume_db(_bus(&"SFX"), linear_to_db(sfx_volume))
 	AudioServer.set_bus_volume_db(_bus(&"Music"), linear_to_db(music_volume))
 	if DisplayServer.get_name() != "headless":
-		var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
-		if DisplayServer.window_get_mode() != mode:
-			DisplayServer.window_set_mode(mode)
+		# Only when it changes: a maximized window stays maximized.
+		var current := DisplayServer.window_get_mode()
+		var is_full := current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+		if fullscreen != is_full:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 	changed.emit()

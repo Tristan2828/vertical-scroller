@@ -1,9 +1,9 @@
 class_name SettingsPanel
 extends PanelContainer
-## Volumes, scaling, auto-fire, mouse mode, screen shake and fullscreen. Each
-## button steps through its choices (easy with a gamepad; left / right step a
-## volume down or up). Changes apply immediately and are saved when the panel
-## closes.
+## Volume sliders, then scaling, auto-fire, mouse mode, screen shake and
+## fullscreen: each button steps through its choices (easy with a gamepad;
+## sliders move with left / right). Changes apply immediately and are saved
+## when the panel closes.
 
 signal closed
 
@@ -12,11 +12,12 @@ const SCALING_HINTS: Array[String] = [
 	"Fills the screen; smooths uneven pixel sizes.",
 	"Whole-number zoom only; black borders.",
 ]
-const VOLUME_STEP: float = 0.1
-
-@onready var _master: Button = %MasterButton
-@onready var _sfx: Button = %SfxButton
-@onready var _music: Button = %MusicButton
+@onready var _master: HSlider = %MasterSlider
+@onready var _sfx: HSlider = %SfxSlider
+@onready var _music: HSlider = %MusicSlider
+@onready var _master_label: Label = %MasterLabel
+@onready var _sfx_label: Label = %SfxLabel
+@onready var _music_label: Label = %MusicLabel
 @onready var _scaling: Button = %ScalingButton
 @onready var _scaling_hint: Label = %ScalingHint
 @onready var _fire: Button = %FireButton
@@ -28,9 +29,9 @@ const VOLUME_STEP: float = 0.1
 
 func _ready() -> void:
 	hide()
-	_volume_button(_master, &"master_volume")
-	_volume_button(_sfx, &"sfx_volume")
-	_volume_button(_music, &"music_volume")
+	_volume_slider(_master, &"master_volume")
+	_volume_slider(_sfx, &"sfx_volume", &"scrap")
+	_volume_slider(_music, &"music_volume")
 	_shake.pressed.connect(func() -> void:
 		Settings.screen_shake = (Settings.screen_shake + 1) % Settings.SHAKE_NAMES.size()
 		_changed())
@@ -55,22 +56,14 @@ func open() -> void:
 	_master.grab_focus()
 
 
-## A volume button: press to go up (wrapping to 0 after 100%), left / right to step.
-func _volume_button(button: Button, setting: StringName) -> void:
-	button.pressed.connect(func() -> void:
-		var value: float = Settings.get(setting)
-		Settings.set(setting, 0.0 if value >= 1.0 - 0.001 else step_volume(value, 1))
-		_changed())
-	button.gui_input.connect(func(event: InputEvent) -> void:
-		if event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right"):
-			Settings.set(setting, step_volume(Settings.get(setting), -1 if event.is_action_pressed("ui_left") else 1))
-			_changed()
-			button.accept_event())
-
-
-## One 10% step up or down, kept on whole steps and inside 0..1.
-static func step_volume(value: float, direction: int) -> float:
-	return clampf(snappedf(value + VOLUME_STEP * direction, VOLUME_STEP), 0.0, 1.0)
+## A volume slider (0..1). `preview`: a sound played while it moves, so you
+## hear the new level.
+func _volume_slider(slider: HSlider, setting: StringName, preview: StringName = &"") -> void:
+	slider.value_changed.connect(func(value: float) -> void:
+		Settings.set(setting, value)
+		_changed()
+		if not preview.is_empty():
+			Sfx.play(preview))
 
 
 func close() -> void:
@@ -85,9 +78,10 @@ func _changed() -> void:
 
 
 func _refresh() -> void:
-	_master.text = "Volume: %d%%" % roundi(Settings.master_volume * 100.0)
-	_sfx.text = "Sound effects: %d%%" % roundi(Settings.sfx_volume * 100.0)
-	_music.text = "Music: %d%%" % roundi(Settings.music_volume * 100.0)
+	for row: Array in [[_master, _master_label, "Volume", Settings.master_volume],
+			[_sfx, _sfx_label, "Effects", Settings.sfx_volume], [_music, _music_label, "Music", Settings.music_volume]]:
+		(row[0] as HSlider).set_value_no_signal(row[3])
+		(row[1] as Label).text = "%s %d%%" % [row[2], roundi(float(row[3]) * 100.0)]
 	_shake.text = "Screen shake: %s" % Settings.SHAKE_NAMES[Settings.screen_shake]
 	_scaling.text = "Scaling: %s" % SCALING_NAMES[Settings.scaling_mode]
 	_scaling_hint.text = SCALING_HINTS[Settings.scaling_mode]

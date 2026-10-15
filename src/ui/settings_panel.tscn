@@ -16,20 +16,59 @@ theme_override_font_sizes/font_size = 18
 text = "Settings"
 horizontal_alignment = 1
 
-[node name="MasterButton" type="Button" parent="Box"]
+[node name="MasterRow" type="HBoxContainer" parent="Box"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MasterLabel" type="Label" parent="Box/MasterRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 0)
 layout_mode = 2
 text = "Volume"
 
-[node name="SfxButton" type="Button" parent="Box"]
+[node name="MasterSlider" type="HSlider" parent="Box/MasterRow"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Sound effects"
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
 
-[node name="MusicButton" type="Button" parent="Box"]
+[node name="SfxRow" type="HBoxContainer" parent="Box"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SfxLabel" type="Label" parent="Box/SfxRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 0)
+layout_mode = 2
+text = "Effects"
+
+[node name="SfxSlider" type="HSlider" parent="Box/SfxRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+
+[node name="MusicRow" type="HBoxContainer" parent="Box"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MusicLabel" type="Label" parent="Box/MusicRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 0)
 layout_mode = 2
 text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="Box/MusicRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
 
 [node name="ScalingButton" type="Button" parent="Box"]
 unique_name_in_owner = true

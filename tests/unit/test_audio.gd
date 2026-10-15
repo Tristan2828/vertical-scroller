@@ -83,11 +83,31 @@ func test_audio_has_its_own_buses() -> void:
 	assert_true(true, "playing in a headless run is harmless")
 
 
-func test_volume_steps_stay_on_tens_and_in_range() -> void:
-	assert_almost_eq(SettingsPanel.step_volume(0.8, 1), 0.9, 0.0001)
-	assert_almost_eq(SettingsPanel.step_volume(0.75, 1), 0.9, 0.0001, "snaps to whole steps")
-	assert_eq(SettingsPanel.step_volume(1.0, 1), 1.0)
-	assert_eq(SettingsPanel.step_volume(0.0, -1), 0.0)
+## A test run's --window / --scaling must never end up in the player's settings file.
+func test_launch_overrides_are_not_saved() -> void:
+	var path := "user://test_settings_override.cfg"
+	var was_fullscreen := Settings.fullscreen
+	var was_kept: Dictionary[StringName, Variant] = Settings._kept.duplicate()
+	Settings._kept.clear()
+	Settings.fullscreen = true
+	Settings.override(&"fullscreen", false)
+	assert_false(Settings.fullscreen, "this run is windowed")
+	Settings.save(path)
+	var config := ConfigFile.new()
+	config.load(path)
+	assert_true(config.get_value("video", "fullscreen"), "the saved choice stays fullscreen")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	Settings._kept = was_kept
+	Settings.fullscreen = was_fullscreen
+
+
+func test_settings_has_volume_sliders() -> void:
+	var panel := (load("res://src/ui/settings_panel.tscn") as PackedScene).instantiate() as SettingsPanel
+	add_child_autofree(panel)
+	for slider_name: String in ["MasterSlider", "SfxSlider", "MusicSlider"]:
+		var slider := panel.get_node("%" + slider_name) as HSlider
+		assert_not_null(slider, slider_name)
+		assert_eq(slider.max_value, 1.0)
 
 
 func test_screen_shake_fades_and_respects_the_setting() -> void:

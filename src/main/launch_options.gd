@@ -110,10 +110,10 @@ static func parse(args: PackedStringArray) -> void:
 ## Puts the overrides into Settings (without saving them).
 static func apply_to_settings() -> void:
 	if window_size != Vector2i.ZERO:
-		Settings.fullscreen = false
+		Settings.override(&"fullscreen", false)
 	if scaling_mode >= 0:
-		Settings.scaling_mode = scaling_mode as ScreenFit.Mode
+		Settings.override(&"scaling_mode", scaling_mode as ScreenFit.Mode)
 	if fire_mode >= 0:
-		Settings.fire_mode = fire_mode as FireControl.Mode
+		Settings.override(&"fire_mode", fire_mode as FireControl.Mode)
 	if mouse_mode:
-		Settings.mouse_mode = true
+		Settings.override(&"mouse_mode", true)
