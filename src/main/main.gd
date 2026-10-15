@@ -251,6 +251,10 @@ func _report_and_quit() -> void:
 		Music.now_playing() if not Music.now_playing().is_empty() else &"none", AudioServer.output_device,
 		AudioServer.get_bus_volume_db(0), AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Music")),
 		AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"SFX"))])
+	print("[report]   window %s on screen %d (%s), %s, picture %s, scaling %s" % [get_window().size,
+		get_window().current_screen, DisplayServer.screen_get_size(get_window().current_screen),
+		"fullscreen" if get_window().mode >= Window.MODE_FULLSCREEN else "windowed",
+		ScreenFit.fit(get_window().size, Settings.scaling_mode), SCALING_NAMES[Settings.scaling_mode]])
 	Net.leave_game()
 	get_tree().quit()
 

@@ -23,6 +23,9 @@ var mouse_mode: bool = false
 var screen_shake: int = 2
 ## Name shown to the other players (title menu).
 var player_name: String = ""
+## The monitor the game opens on (-1 = not chosen yet: the widest landscape one).
+## Remembered when the game closes, so moving the window there sticks.
+var screen: int = -1
 
 
 func _enter_tree() -> void:
@@ -32,7 +35,53 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	load_settings()
+	_move_to_screen()
 	apply()
+
+
+## Closing: remember which monitor the game was on.
+func _exit_tree() -> void:
+	if _places_window() and DisplayServer.window_get_current_screen() != screen:
+		screen = DisplayServer.window_get_current_screen()
+		save()
+
+
+## Opens the game on the remembered monitor, or on the first start on the
+## widest landscape one (a 16:9 game on a portrait monitor is a thin band).
+func _move_to_screen() -> void:
+	if not _places_window():
+		return
+	var sizes: Array[Vector2i] = []
+	for index: int in DisplayServer.get_screen_count():
+		sizes.append(DisplayServer.screen_get_size(index))
+	var target := screen if screen >= 0 and screen < sizes.size() else best_screen(sizes, DisplayServer.get_primary_screen())
+	if target != DisplayServer.window_get_current_screen():
+		get_window().current_screen = target
+
+
+## Not in headless runs, and not when a launch picked the window's place itself
+## (Godot's --screen, or the game's --window / --window-at test flags).
+static func _places_window() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	for arg: String in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+		if arg == "--screen" or arg.begins_with("--window"):
+			return false
+	return true
+
+
+## The widest landscape monitor (the primary one breaks ties; if every monitor
+## is portrait, the primary one).
+static func best_screen(sizes: Array[Vector2i], primary: int) -> int:
+	var best := clampi(primary, 0, maxi(sizes.size() - 1, 0))
+	for index: int in sizes.size():
+		var size := sizes[index]
+		if size.x < size.y:
+			continue
+		var best_size := sizes[best] if best < sizes.size() else Vector2i.ZERO
+		if best_size.x < best_size.y or size.x * size.y > best_size.x * best_size.y:
+			best = index
+	return best
 
 
 func load_settings() -> void:
@@ -48,6 +97,7 @@ func load_settings() -> void:
 	mouse_mode = config.get_value("controls", "mouse_mode", mouse_mode)
 	screen_shake = clampi(config.get_value("video", "screen_shake", screen_shake), 0, SHAKE_NAMES.size() - 1)
 	player_name = str(config.get_value("player", "name", player_name))
+	screen = int(config.get_value("video", "screen", screen))
 
 
 func save() -> void:
@@ -61,6 +111,7 @@ func save() -> void:
 	config.set_value("controls", "mouse_mode", mouse_mode)
 	config.set_value("video", "screen_shake", screen_shake)
 	config.set_value("player", "name", player_name)
+	config.set_value("video", "screen", screen)
 	config.save(PATH)
 
 

@@ -31,3 +31,17 @@ func test_wider_screen_gets_side_borders() -> void:
 func test_window_smaller_than_the_game_shrinks_even_in_pixel_perfect() -> void:
 	var rect := ScreenFit.fit(Vector2i(800, 450), ScreenFit.Mode.PIXEL_PERFECT)
 	assert_almost_eq(rect.size.x, 800.0, 0.01)
+
+
+## The owner's PC: a portrait primary monitor (screen 0) and a landscape 4K one.
+## A 16:9 game on a portrait monitor is a thin band, so it opens on the landscape one.
+func test_first_start_picks_the_widest_landscape_monitor() -> void:
+	var portrait_then_4k: Array[Vector2i] = [Vector2i(2160, 3840), Vector2i(3840, 2160)]
+	assert_eq(Settings.best_screen(portrait_then_4k, 0), 1)
+	var two_landscape: Array[Vector2i] = [Vector2i(1920, 1080), Vector2i(2560, 1440)]
+	assert_eq(Settings.best_screen(two_landscape, 0), 1, "the bigger one")
+	var same: Array[Vector2i] = [Vector2i(1920, 1080), Vector2i(1920, 1080)]
+	assert_eq(Settings.best_screen(same, 1), 1, "a tie keeps the primary monitor")
+	var only_portrait: Array[Vector2i] = [Vector2i(1080, 1920)]
+	assert_eq(Settings.best_screen(only_portrait, 0), 0)
+	assert_false(Settings._places_window(), "never moves the window in a headless test run")
