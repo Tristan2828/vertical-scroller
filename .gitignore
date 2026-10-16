@@ -32,3 +32,6 @@ music-takes/
 # AI sound and voice takes from gamekit's engines; finished sounds go to assets/audio
 sound-takes/
 voice-takes/
+
+# Downloaded asset packs (raw zips, some with licenses that forbid redistribution); finished sprites go to assets/
+packs/
