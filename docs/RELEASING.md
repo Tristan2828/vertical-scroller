@@ -50,8 +50,8 @@ to GitHub, and the version's tag doesn't exist yet.
   the screen copies messages to the clipboard instead. Anyone determined could dig the link out of the
   exe and post to that one channel: if that ever happens, delete the webhook in Discord, make a new one,
   update the file and release again.
-- **Optional `#dev-log` feed:** GitHub repo -> Settings -> Webhooks -> Add webhook: the channel's webhook
-  URL with `/github` added on the end, content type `application/json`, events **Pushes** and **Releases**.
+- **No commit feed:** the owner wants only releases in Discord (decided 2026-10-15), so there is no GitHub
+  repo webhook for pushes.
 
 ## Troubleshooting
 
