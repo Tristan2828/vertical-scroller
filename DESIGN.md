@@ -178,7 +178,7 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **Playtest 3** (owner, v0.0.8): the Fortress Gunship fight played great; only its look needed work. The HP bar should be red, and power level and special charges should be icons, filled or empty, instead of text. Done: the boss keeps its design, hitboxes and attacks but is now pixel art (steel plating, seams, rivets, red trim, lights; turret barrels that track the nearest ship, blinking launch tubes, sliding hangar doors, armor plates over the core that open into a pulsing eye, smoke on damaged parts); the HUD's top-left block has a red HP bar (blinks below 30%), 5 power arrows, bomb or shield icons for charges (used ones hollow) and boost icons with timer bars, on a dark panel. Scrap: 100% kills, all ground targets and no damage weren't realistic any more on the busier stage. Options were tiered goals (A), per-stage medal challenges (B), drops only (C) or A + B (D); the owner picked **A now, B added later** (§4 Stage goals).
 - **2026-10-14:** a "Boss only" mode in the lobby (host's switch) for testing bosses: every stage of the run starts just before its boss; the results, shop and summary still happen; it doesn't count toward the personal best.
 - **2026-10-15:** v0.0.10 / v0.0.11: placeholder synth sound and music, screen shake, volume sliders, in-game updater, Send feedback (Discord), Discord release announcements (no commit feed).
-- **2026-10-16:** art packs chosen for a first try (§6): Foozle's Void fleets, Tiny Ships, Kenney's tanks, Warped Shooting FX, BDragon's health bars; SpaceRage (license forbids public repos) and a glossy hi-res UI kit were dropped. The art comparison missions and ship skins are in (§6).
+- **2026-10-16:** art packs chosen for a first try (§6): Foozle's Void fleets, Tiny Ships, Kenney's tanks, Warped Shooting FX, BDragon's health bars; SpaceRage (license forbids public repos) and a glossy hi-res UI kit were dropped. The art comparison missions and ship skins are in (§6), released as v0.0.12 for the owner and friends to compare.
 
 ## 8. Decisions log (why)
 - **Pixel art over hi-res 2D or low-poly 3D:** it reuses the owner's gamekit pipeline, Claude can draw and edit it, and asset packs mix well under one palette. 3D (with Kenney/Quaternius CC0 kits) was the closest look to Sky Force, but it's the biggest effort and a second engine to learn.
@@ -193,6 +193,9 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - **Tiered stage goals (playtest 3, replaces the 70% / 100% / no damage / all ground goals):** with ~570 air enemies and 98 ground targets per stage, all-or-nothing goals paid almost nothing; tiers always give the team a next step to aim for. Medal challenges come later for variety.
 - **Busier screen (playtest 1, replaces "Sky Force-level density"):** the first stage felt empty; the screen fills up, but enemy bullets stay slow and readable.
 - **Scripted paths:** the genre's own approach; learnable; the cheapest and smoothest netcode.
+- **Pixel-art packs only, no vector packs (2026-10-16, owner):** vector and hi-res packs (CraftPix tanks and tiles, Gisha's ships, a glossy sci-fi UI kit, Kenney's Tiny Battle) don't match the pixel ships. Kenney's Top-down Tanks stays as an exception: its hulls shrink to ~19x18 and pass next to the Void ships.
+- **Licenses decide what goes in the public repo:** CC0 and CC-BY packs are committed (credit in `CREDITS.md`); packs that forbid sharing their files (Ravenmore's SpaceRage: no open-source projects, one commercial game) are dropped or kept git-ignored (timberlate's Shoot'em Up; J i m's packs until the author answers).
+- **Discord gets releases only (2026-10-15, owner):** no commit feed, for this game and Medieval Survival.
 
 ## 9. Open questions
 - Exact numbers: HP, damage, power levels, charges, prices, respawn credits, HP scaling (all marked draft).
@@ -204,7 +207,9 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - Audio direction (synthwave, orchestral, chiptune...).
 - Whether to add 2D lighting.
 - The real name.
-- Hosting: a new public GitHub repo for playtest releases, as with Medieval Survival?
+- **Art direction (art comparison, §6):** which enemy set (Kla'ed / Nairan / Nautolan / Shoot'em Up, or a mix), which skins stay, and whether the pack ships get resized to the hitboxes (or the hitboxes to the art). The palette (`palette.hex`) is then rebuilt from the chosen set.
+- Ground art: AI seamless textures for the base floor (gamekit picture-make), turrets and buildings drawn on the palette; Kenney tank hulls so far.
+- Ask J i m (bullet pack, enemies pack) and timberlate007 (Shoot'em Up) whether their files may sit in a public repo.
 
 ## 10. Ideas for later
 - Rescue mechanic (Sky Force): stranded crew in the facilities, a stage goal.
