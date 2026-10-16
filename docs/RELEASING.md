@@ -2,7 +2,7 @@
 
 Builds are published as **GitHub Releases** on the public repo
 [Tristan2828/vertical-scroller](https://github.com/Tristan2828/vertical-scroller/releases) and, once the
-webhook is set up (below), announced automatically in Discord. Copied from Medieval Survival's process.
+announced automatically in Discord `#builds`. Copied from Medieval Survival's process.
 
 ## Every release
 
@@ -16,7 +16,7 @@ webhook is set up (below), announced automatically in Discord. Copied from Medie
    pwsh tools/release.ps1 -DryRun   # checks + shows the notes, publishes nothing
    pwsh tools/release.ps1           # builds, creates release v<version> with the zip
    ```
-5. If the Discord webhook is set up, the release appears in `#builds` about a minute later.
+5. About a minute later, the release appears in Discord `#builds`.
 6. Players on an older version see "Version X is out!" with an **Update now** button on the
    title screen. It downloads the zip from this release, swaps the running exe and restarts. So keep
    the asset name `VerticalScroller-<version>-windows.zip` with `VerticalScroller.exe` at its root
@@ -38,9 +38,9 @@ to GitHub, and the version's tag doesn't exist yet.
   it is never stored on your PC or in the code.
 - Commits use the GitHub noreply email (set in this repo's git config) so your real email stays private.
 
-## One-time setup (not done yet)
+## One-time setup
 
-- **`#builds` announcements:** in Discord, the channel's gear -> Integrations -> Webhooks -> New Webhook
+- **`#builds` announcements (done 2026-10-15):** in Discord, the channel's gear -> Integrations -> Webhooks -> New Webhook
   -> Copy URL, then run `gh secret set DISCORD_BUILDS_WEBHOOK --repo Tristan2828/vertical-scroller` and
   paste it. To replace a leaked or deleted webhook, make a new one and run the same command.
 - **In-game feedback:** the game's "Send feedback" screen (title menu and pause menu) posts to a Discord
