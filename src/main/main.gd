@@ -256,7 +256,17 @@ func _report_and_quit() -> void:
 		"fullscreen" if get_window().mode >= Window.MODE_FULLSCREEN else "windowed",
 		ScreenFit.fit(get_window().size, Settings.scaling_mode), SCALING_NAMES[Settings.scaling_mode]])
 	Net.leave_game()
-	get_tree().quit()
+	Main.quit_game(get_tree())
+
+
+## Quits after stopping all sound. The audio thread frees a stopped stream a
+## moment later; quitting before that reports it as leaked ("ObjectDB instances
+## leaked at exit"). (From Medieval Survival.)
+static func quit_game(tree: SceneTree) -> void:
+	Music.stop_all()
+	Sfx.stop_all()
+	await tree.create_timer(0.2, true, false, true).timeout
+	tree.quit()
 
 
 # --- Screenshots -----------------------------------------------------------------

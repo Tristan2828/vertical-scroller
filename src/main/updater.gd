@@ -165,7 +165,7 @@ func _on_downloaded(result: int, code: int, _headers: PackedStringArray, _body: 
 		error = "Updated to %s! Close the game and start it again." % latest.version
 		_set_state(State.RESTART_NEEDED)
 		return
-	get_tree().quit()
+	Main.quit_game(get_tree())
 
 
 ## Why updating in place can't work from where this exe is, or "" if it can.

@@ -34,7 +34,7 @@ func _ready() -> void:
 	_leave_button.pressed.connect(func() -> void:
 		close()
 		leave_requested.emit())
-	_quit_button.pressed.connect(func() -> void: get_tree().quit())
+	_quit_button.pressed.connect(func() -> void: Main.quit_game(get_tree()))
 
 
 func open() -> void:

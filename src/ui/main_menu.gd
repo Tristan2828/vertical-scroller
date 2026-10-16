@@ -90,7 +90,7 @@ func _ready() -> void:
 	_feedback_button = _button("Send feedback", func() -> void:
 		_panel.hide()
 		feedback_requested.emit())
-	_button("Quit", func() -> void: get_tree().quit())
+	_button("Quit", func() -> void: Main.quit_game(get_tree()))
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
