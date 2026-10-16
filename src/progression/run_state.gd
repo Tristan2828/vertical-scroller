@@ -9,6 +9,8 @@ extends RefCounted
 class PlayerRun:
 	extends RefCounted
 	var ship: int = 0
+	## Skins index (cosmetic).
+	var skin: int = Skins.CLASSIC
 	var special: int = Specials.Kind.MEGA_BOMB
 	## HP carries over between stages (the shop sells repairs). -1 = full.
 	var hp: int = -1
@@ -23,12 +25,14 @@ class PlayerRun:
 	var downs: int = 0
 
 	func to_dict() -> Dictionary:
-		return {"ship": ship, "special": special, "hp": hp, "max_hp_bonus": max_hp_bonus, "power": power,
+		return {"ship": ship, "skin": skin, "special": special, "hp": hp, "max_hp_bonus": max_hp_bonus, "power": power,
 			"speed_bonus": speed_bonus, "extra_charges": extra_charges, "kills": kills, "damage": damage, "downs": downs}
 
 	static func from_dict(data: Dictionary) -> PlayerRun:
 		var player := PlayerRun.new()
 		player.ship = clampi(int(data.get("ship", 0)), 0, Ships.ALL.size() - 1)
+		var skin_id := int(data.get("skin", Skins.CLASSIC))
+		player.skin = skin_id if Skins.fits(player.ship, skin_id) else Skins.CLASSIC
 		var special_kind := int(data.get("special", 0))
 		player.special = special_kind if Specials.is_valid(special_kind) else Specials.Kind.MEGA_BOMB
 		player.hp = int(data.get("hp", -1))
@@ -73,6 +77,8 @@ static func start(order: Array[int], rng: RandomNumberGenerator) -> RunState:
 	run.seed_value = rng.randi()
 	run.credits = Stage.START_CREDITS
 	run.boss_only = RunSetup.boss_only
+	# The lobby's mission: every stage of the run plays it (art comparison).
+	run.stage_plan.fill(RunSetup.mission_index())
 	for i: int in run.stage_plan.size():
 		# The first stage plays straight; later ones roll a twist (draft).
 		run.modifiers.append(StageModifiers.Id.NONE if i == 0 else StageModifiers.roll(rng))
@@ -88,6 +94,7 @@ func player(peer_id: int) -> PlayerRun:
 	if not players.has(peer_id):
 		var fresh := PlayerRun.new()
 		fresh.ship = RunSetup.ship_for(peer_id)
+		fresh.skin = RunSetup.skin_for(peer_id)
 		fresh.special = RunSetup.special_for(peer_id)
 		players[peer_id] = fresh
 	return players[peer_id]

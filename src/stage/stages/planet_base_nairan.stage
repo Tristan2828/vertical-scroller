@@ -1,0 +1,5 @@
+# Art comparison (2026-10-16): Planet Base exactly as the classic mission plays it, drawn with
+# the green Void fleet (Foozle) and Kenney's tank hulls. Same waves, ground targets and boss.
+use = planet_base.stage
+name = Planet Base (Nairan art)
+art = nairan

@@ -16,6 +16,9 @@ extends RefCounted
 ##   --weak-bosses                bosses have 2% HP (test the stage ending quickly)
 ##   --boss-only                  the lobby starts with "Boss only" on (every stage starts at its boss)
 ##   --invincible                 hits still land and count, but HP refills at once
+##   --mission=<n>                the lobby picks this mission (Stages.PATHS index: 0 classic,
+##                                1 Kla'ed, 2 Nairan, 3 Nautolan, 4 Shoot'em Up art)
+##   --skin=<n>                   wear this ship skin (Skins index; must fit the ship)
 ##   --update-now                 exported game: install a newer release as soon as it's found
 ##                                (end-to-end updater test)
 ##   --perf-log                   every second: fps, worst frame, step timings, memory, objects
@@ -45,6 +48,10 @@ static var weak_bosses: bool = false
 static var ship: int = -1
 static var invincible: bool = false
 static var update_now: bool = false
+## --mission=<n>: the host's lobby picks this mission (Stages.PATHS index).
+static var mission: int = -1
+## --skin=<n>: wear this skin (Skins index; must fit the ship).
+static var skin: int = -1
 static var screenshot_dir: String = ""
 ## Zero = use the fullscreen setting.
 static var window_size: Vector2i = Vector2i.ZERO
@@ -83,6 +90,10 @@ static func parse(args: PackedStringArray) -> void:
 			invincible = true
 		elif arg == "--update-now":
 			update_now = true
+		elif arg.begins_with("--mission="):
+			mission = arg.trim_prefix("--mission=").to_int()
+		elif arg.begins_with("--skin="):
+			skin = arg.trim_prefix("--skin=").to_int()
 		elif arg == "--perf-log":
 			PerfLog.enabled = true
 		elif arg.begins_with("--ship="):

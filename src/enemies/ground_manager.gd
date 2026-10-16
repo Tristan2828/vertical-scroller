@@ -232,6 +232,13 @@ func _draw() -> void:
 			_draw_rubble(rect)
 			continue
 		var color := Color.WHITE if _flash[i] > 0.0 else type.body_color
+		# The art set's file for this object ("ground_<key>"), if it has one; the
+		# turning barrel is still drawn here.
+		var art := "ground_" + type.key
+		if PixelArt.has_file(art):
+			PixelArt.draw(self, art, center, Color.WHITE, _flash[i] > 0.0)
+			_draw_barrel(center, _aims[i], type.barrel_length, type.key == "heavy_turret")
+			continue
 		match type.key:
 			"turret", "heavy_turret":
 				draw_rect(rect, OUTLINE)

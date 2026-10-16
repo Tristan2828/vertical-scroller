@@ -465,16 +465,63 @@ const SPRITES: Dictionary[String, Array] = {
 const HOLLOW: Color = Color(0.42, 0.44, 0.52)
 const TINT_CHAR: String = "P"
 const TINT_SHADE_CHAR: String = "p"
+## Where art files live: <sprite>.png (e.g. skins/tiny01.png), and art sets in
+## sets/<set>/<sprite>.png. A file wins over the sprite's text rows.
+## (Files from Medieval Survival's PixelArt; art sets are new.)
+const ART_DIR: String = "res://assets/art/"
+## The player colors in art files (the text sprites use "P" / "p").
+const FILE_TINT: Color = Color8(255, 0, 255)
+const FILE_TINT_SHADE: Color = Color8(128, 0, 128)
+
+## The art set in use ("" = the classic art): a stage sets its StageDef.art while
+## it's loaded, so the same sprite names draw that set's files.
+static var art_set: String = "":
+	set(value):
+		art_set = value
+		_cache.clear()
 
 static var _cache: Dictionary[String, ImageTexture] = {}
 static var _disc_cache: Dictionary[String, ImageTexture] = {}
+## Art files looked up so far: "<set>|<sprite>" -> its image, or null when it has none.
+static var _files: Dictionary[String, Variant] = {}
 
 
 static func has_sprite(sprite: String) -> bool:
-	return SPRITES.has(sprite)
+	return SPRITES.has(sprite) or file_image(sprite) != null
+
+
+## True when the sprite comes from an art file (in the current art set or not).
+static func has_file(sprite: String) -> bool:
+	return file_image(sprite) != null
+
+
+## The sprite's art file as an image (the current art set's first), or null.
+## Looked up once per set and sprite.
+static func file_image(sprite: String) -> Image:
+	var key := art_set + "|" + sprite
+	if _files.has(key):
+		return _files[key]
+	var image: Image = null
+	var paths: Array[String] = [ART_DIR + sprite + ".png"]
+	if not art_set.is_empty():
+		paths.push_front(ART_DIR + "sets/" + art_set + "/" + sprite + ".png")
+	for path: String in paths:
+		if ResourceLoader.exists(path):
+			var tex := load(path) as Texture2D
+			if tex != null:
+				image = tex.get_image()
+				if image.is_compressed():
+					image.decompress()
+				image.convert(Image.FORMAT_RGBA8)
+				break
+	_files[key] = image
+	return image
 
 
 static func size_of(sprite: String) -> Vector2i:
+	var file := file_image(sprite)
+	if file != null:
+		return file.get_size()
 	var rows: Array = SPRITES[sprite]
 	return Vector2i(String(rows[0]).length(), rows.size())
 
@@ -486,6 +533,11 @@ static func texture(sprite: String, tint: Color = Color.WHITE, flash: bool = fal
 	var key := "%s|%s|%s|%s" % [sprite, tint.to_html(), flash, hollow]
 	if _cache.has(key):
 		return _cache[key]
+	var file := file_image(sprite)
+	if file != null:
+		var from_file := ImageTexture.create_from_image(_recolor_file(file, tint, flash, hollow))
+		_cache[key] = from_file
+		return from_file
 	var rows: Array = SPRITES[sprite]
 	var image := Image.create(String(rows[0]).length(), rows.size(), false, Image.FORMAT_RGBA8)
 	var shade := tint.darkened(0.35)
@@ -508,6 +560,39 @@ static func texture(sprite: String, tint: Color = Color.WHITE, flash: bool = fal
 	var built := ImageTexture.create_from_image(image)
 	_cache[key] = built
 	return built
+
+
+## An art file with its magenta player colors tinted (everything white for a hit
+## flash; only the edge, in gray, when hollow).
+static func _recolor_file(source: Image, tint: Color, flash: bool, hollow: bool = false) -> Image:
+	var image := source.duplicate() as Image
+	var shade := tint.darkened(0.35)
+	for y: int in image.get_height():
+		for x: int in image.get_width():
+			var color := image.get_pixel(x, y)
+			if color.a == 0.0:
+				continue
+			var opaque := Color(color, 1.0)
+			if opaque.is_equal_approx(FILE_TINT):
+				color = Color(tint, color.a)
+			elif opaque.is_equal_approx(FILE_TINT_SHADE):
+				color = Color(shade, color.a)
+			if flash:
+				color = Color(Color.WHITE, color.a)
+			if hollow:
+				color = HOLLOW if _file_edge(source, x, y) else Color(0, 0, 0, 0)
+			image.set_pixel(x, y, color)
+	return image
+
+
+static func _file_edge(image: Image, x: int, y: int) -> bool:
+	for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var at := Vector2i(x, y) + step
+		if at.x < 0 or at.y < 0 or at.x >= image.get_width() or at.y >= image.get_height():
+			return true
+		if image.get_pixelv(at).a == 0.0:
+			return true
+	return false
 
 
 ## Whether pixel (x, y) of a sprite touches a transparent pixel or the border.

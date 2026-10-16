@@ -1,9 +1,10 @@
 class_name Lobby
 extends Control
-## The party screen before a stage (solo too): who's here, their ship and
-## special (your row has a button to change yours), who's ready, and the
-## host's invite. The host owns the state (LobbyState) and sends
-## it to everyone; clients ask the host to change their ship or ready flag.
+## The party screen before a stage (solo too): who's here, their ship (with
+## its skin) and special (your row's ship button opens "Choose your ship",
+## ShipPicker), who's ready, the host's invite, and the host's mission and
+## mode switches. The host owns the state (LobbyState) and sends it to
+## everyone; clients ask the host to change their ship, skin or ready flag.
 ## Trimmed from Medieval Survival's lobby: no hero picker or difficulty pages.
 ## Spawned by Main's LevelSpawner on every peer, like the stage.
 
@@ -33,6 +34,9 @@ var _ready_button: Button
 var _start_button: Button
 var _leave_button: Button
 var _mode_button: Button
+var _mission_button: Button
+var _main_panel: PanelContainer
+var _picker: ShipPicker
 
 
 func _ready() -> void:
@@ -43,12 +47,13 @@ func _ready() -> void:
 	_ready_button.visible = not is_host
 	if is_host:
 		_state.boss_only = RunSetup.boss_only
-		_state.add(1, RunSetup.ship_for(1), RunSetup.special_for(1))
+		_state.choose_mission(LaunchOptions.mission if LaunchOptions.mission >= 0 else RunSetup.mission)
+		_add_player(1)
 		for peer_id: int in RunSetup.order:
 			if multiplayer.get_peers().has(peer_id):
-				_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id))
+				_add_player(peer_id)
 		for peer_id: int in multiplayer.get_peers():
-			_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id))
+			_add_player(peer_id)
 		multiplayer.peer_connected.connect(_on_peer_connected)
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 		Net.invite.changed.connect(_refresh)
@@ -59,7 +64,14 @@ func _ready() -> void:
 	Net.names_changed.connect(_refresh)
 	if LaunchOptions.ship >= 0 and LaunchOptions.ship < Ships.ALL.size():
 		_choose_ship_locally(LaunchOptions.ship)
+	if LaunchOptions.skin >= 0:
+		_choose_skin_locally(LaunchOptions.skin)
 	_refresh()
+
+
+## Host: a player in the lobby with the choices they made last time.
+func _add_player(peer_id: int) -> void:
+	_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id), RunSetup.skin_for(peer_id))
 
 
 func _build() -> void:
@@ -72,8 +84,17 @@ func _build() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(320, 0)
+	panel.custom_minimum_size = Vector2(360, 0)
 	center.add_child(panel)
+	_main_panel = panel
+	_picker = ShipPicker.new()
+	center.add_child(_picker)
+	_picker.ship_chosen.connect(_choose_ship_locally)
+	_picker.skin_chosen.connect(_choose_skin_locally)
+	_picker.closed.connect(func() -> void:
+		_main_panel.show()
+		_party_signature = ""
+		_refresh())
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
 	panel.add_child(column)
@@ -91,6 +112,10 @@ func _build() -> void:
 	_party = VBoxContainer.new()
 	_party.add_theme_constant_override("separation", 2)
 	column.add_child(_party)
+	_mission_button = Button.new()
+	_mission_button.tooltip_text = "The mission every stage of the run plays (the art comparison missions use other art)"
+	_mission_button.pressed.connect(_next_mission)
+	column.add_child(_mission_button)
 	_mode_button = Button.new()
 	_mode_button.tooltip_text = "Boss only: every stage starts just before its boss (for testing)"
 	_mode_button.pressed.connect(_toggle_boss_only)
@@ -157,8 +182,13 @@ func _refresh() -> void:
 	else:
 		_invite_label.text = "Connected. The host starts the game."
 	_mode_button.text = "Mode: Boss only (practice)" if _state.boss_only else "Mode: Full stages"
-	# Only the host switches; everyone sees which mode is on.
+	_mission_button.text = "Mission: %s" % Stages.get_stage(_state.mission).name
+	# Only the host switches; everyone sees which mission and mode are on.
 	_mode_button.disabled = not is_host
+	_mission_button.disabled = not is_host
+	var me := multiplayer.get_unique_id()
+	if _picker.visible and _state.ships.has(me):
+		_picker.show_choice(_state.ships[me], _state.skins.get(me, Skins.CLASSIC))
 	_refresh_party()
 	if is_host:
 		var waiting := _state.not_ready(1)
@@ -174,8 +204,8 @@ func _refresh() -> void:
 func _refresh_party() -> void:
 	var signature := ""
 	for peer_id: int in _state.order:
-		signature += "%d:%s:%d:%d:%s;" % [peer_id, Net.names.get(peer_id, ""), _state.ships[peer_id],
-			_state.specials.get(peer_id, 0), _state.ready.get(peer_id, false)]
+		signature += "%d:%s:%d:%d:%d:%s;" % [peer_id, Net.names.get(peer_id, ""), _state.ships[peer_id],
+			_state.skins.get(peer_id, 0), _state.specials.get(peer_id, 0), _state.ready.get(peer_id, false)]
 	if signature == _party_signature:
 		return
 	_party_signature = signature
@@ -197,12 +227,19 @@ func _refresh_party() -> void:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
 		var ship: int = _state.ships[peer_id]
+		var skin: int = _state.skins.get(peer_id, Skins.CLASSIC)
+		var icon := TextureRect.new()
+		icon.texture = PixelArt.texture(Skins.sprite_for(ship, skin), PlayerNames.color_of(slot))
+		icon.custom_minimum_size = Vector2(24, 18)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		row.add_child(icon)
 		if peer_id == me:
 			var ship_button := Button.new()
 			ship_button.text = Ships.ALL[ship].display_name
-			ship_button.tooltip_text = Ships.ALL[ship].blurb
+			ship_button.tooltip_text = "Choose your ship and skin"
 			ship_button.custom_minimum_size = Vector2(64, 0)
-			ship_button.pressed.connect(func() -> void: _choose_ship_locally((ship + 1) % Ships.ALL.size()))
+			ship_button.pressed.connect(open_ship_picker)
 			row.add_child(ship_button)
 		else:
 			var ship_label := Label.new()
@@ -253,6 +290,33 @@ func _choose_ship_locally(ship: int) -> void:
 		_request_ship.rpc_id(1, ship)
 
 
+## Your row's ship button (and --screenshot-dir): the "Choose your ship" panel.
+func open_ship_picker() -> void:
+	var me := multiplayer.get_unique_id()
+	if not _state.ships.has(me):
+		return
+	_main_panel.hide()
+	_picker.open(_state.ships[me], _state.skins.get(me, Skins.CLASSIC), PlayerNames.color_of(_state.order.find(me)))
+
+
+func _choose_skin_locally(skin: int) -> void:
+	if multiplayer.is_server():
+		if _state.choose_skin(1, skin):
+			_broadcast()
+	else:
+		_state.choose_skin(multiplayer.get_unique_id(), skin)
+		_party_signature = ""
+		_refresh()
+		_request_skin.rpc_id(1, skin)
+
+
+## Host: the next mission (wraps around).
+func _next_mission() -> void:
+	if multiplayer.is_server():
+		_state.choose_mission((_state.mission + 1) % Stages.PATHS.size())
+		_broadcast()
+
+
 func _choose_special_locally(special: int) -> void:
 	if multiplayer.is_server():
 		if _state.choose_special(1, special):
@@ -280,7 +344,9 @@ func _start_locally() -> void:
 	if not multiplayer.is_server() or not _state.can_start(1):
 		return
 	RunSetup.ships = _state.ships.duplicate()
+	RunSetup.skins = _state.skins.duplicate()
 	RunSetup.specials = _state.specials.duplicate()
+	RunSetup.mission = _state.mission
 	RunSetup.boss_only = _state.boss_only
 	RunSetup.order = _state.order.duplicate()
 	set_process(false)
@@ -290,7 +356,7 @@ func _start_locally() -> void:
 # --- Host ----------------------------------------------------------------------
 
 func _on_peer_connected(peer_id: int) -> void:
-	_state.add(peer_id, RunSetup.ship_for(peer_id), RunSetup.special_for(peer_id))
+	_add_player(peer_id)
 	_broadcast()
 
 
@@ -303,14 +369,16 @@ func _on_peer_disconnected(peer_id: int) -> void:
 func _broadcast() -> void:
 	var ids := PackedInt32Array(_state.order)
 	var ships := PackedInt32Array()
+	var skins := PackedInt32Array()
 	var specials := PackedInt32Array()
 	var readies := PackedByteArray()
 	for peer_id: int in _state.order:
 		ships.append(_state.ships[peer_id])
+		skins.append(_state.skins.get(peer_id, Skins.CLASSIC))
 		specials.append(_state.specials.get(peer_id, Specials.Kind.MEGA_BOMB))
 		readies.append(1 if _state.ready.get(peer_id, false) else 0)
 	for peer_id: int in _ready_peers:
-		_receive_state.rpc_id(peer_id, ids, ships, specials, readies, _state.boss_only)
+		_receive_state.rpc_id(peer_id, ids, ships, skins, specials, readies, _state.boss_only, _state.mission)
 	_refresh()
 
 
@@ -330,6 +398,12 @@ func _request_ship(ship: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func _request_skin(skin: int) -> void:
+	if multiplayer.is_server() and _state.choose_skin(multiplayer.get_remote_sender_id(), skin):
+		_broadcast()
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _request_special(special: int) -> void:
 	if multiplayer.is_server() and _state.choose_special(multiplayer.get_remote_sender_id(), special):
 		_broadcast()
@@ -344,12 +418,14 @@ func _request_ready(is_ready: bool) -> void:
 
 ## The host is always in the list, so the arrays are never empty.
 @rpc("authority", "call_remote", "reliable")
-func _receive_state(ids: PackedInt32Array, ships: PackedInt32Array, specials: PackedInt32Array,
-		readies: PackedByteArray, boss_only: bool) -> void:
+func _receive_state(ids: PackedInt32Array, ships: PackedInt32Array, skins: PackedInt32Array,
+		specials: PackedInt32Array, readies: PackedByteArray, boss_only: bool, mission: int) -> void:
 	var fresh := LobbyState.new()
 	fresh.boss_only = boss_only
-	for i: int in mini(ids.size(), mini(ships.size(), mini(specials.size(), readies.size()))):
-		fresh.add(ids[i], clampi(ships[i], 0, Ships.ALL.size() - 1), specials[i])
+	fresh.choose_mission(mission)
+	var count := mini(mini(ids.size(), ships.size()), mini(mini(skins.size(), specials.size()), readies.size()))
+	for i: int in count:
+		fresh.add(ids[i], clampi(ships[i], 0, Ships.ALL.size() - 1), specials[i], skins[i])
 		fresh.set_ready(ids[i], readies[i] != 0)
 	_state = fresh
 	_ready_button.set_pressed_no_signal(_state.ready.get(multiplayer.get_unique_id(), false))

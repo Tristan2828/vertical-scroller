@@ -144,6 +144,8 @@ func _ready() -> void:
 	def = Stages.get_stage(stage_index)
 	for error: String in def.errors:
 		push_error("Stage file %s: %s" % [Stages.PATHS[stage_index], error])
+	# The mission's art set (art comparison missions); every peer reads the same file.
+	PixelArt.art_set = def.art
 	# Every peer needs the spawn function: the host calls it via spawn(), and
 	# clients call it automatically with the same data when the spawn replicates.
 	_ship_spawner.spawn_function = _spawn_ship
@@ -227,6 +229,7 @@ func _process(delta: float) -> void:
 
 func _exit_tree() -> void:
 	LocalInput.autopilot_aim = Callable()
+	PixelArt.art_set = ""
 
 
 ## Autopilot (tests, videos): the lowest air enemy above the ship, else the
@@ -362,8 +365,8 @@ func debug_report() -> String:
 		ground_kills, ground.count(), enemies.active_count(), player_bullets.count(), enemy_bullets.count()])
 	lines.append("[report]   scrap %d  credits %d  boss hp %.0f%%  pickups on screen %d" % [team_scrap, credits, boss_hp_ratio * 100.0, pickups.count()])
 	for ship: Ship in ships():
-		var line := "[report]   ship %d (%s) slot %d at %s  hp %d/%d  power %d  %s x%d%s" % [ship.peer_id, ship.display_name(),
-			ship.slot, ship.state.position.round(), ship.health.hp, ship.health.max_hp, ship.state.power,
+		var line := "[report]   ship %d (%s) slot %d (%s) at %s  hp %d/%d  power %d  %s x%d%s" % [ship.peer_id, ship.display_name(), ship.slot, ship.sprite,
+			ship.state.position.round(), ship.health.hp, ship.health.max_hp, ship.state.power,
 			Specials.NAMES[ship.special_kind], ship.special_charges, "  DOWN" if ship.is_down() else ""]
 		if ship.is_local() and not multiplayer.is_server():
 			line += "  corrections=%d largest=%.2fpx" % [ship.correction_count, ship.largest_correction]

@@ -52,6 +52,8 @@ var peer_id: int = 1
 var slot: int = 0
 var ship_id: int = 0
 var stats: ShipStats = null
+## What it looks like: the skin's sprite (Skins), or the ship's own.
+var sprite: String = "ship"
 var state: ShipState = ShipState.new()
 ## Host-owned; clients copy it from snapshots.
 var health: ShipHealth = ShipHealth.new()
@@ -105,6 +107,7 @@ func setup(owner_peer_id: int, player_slot: int, ship: int, start: Vector2, area
 	var carried := RunState.PlayerRun.from_dict(run)
 	# Each player gets its own copy so in-run changes only affect this ship.
 	stats = Ships.ALL[ship].duplicate() as ShipStats
+	sprite = Skins.sprite_for(ship, carried.skin)
 	stats.max_hp += carried.max_hp_bonus
 	stats.move_speed *= 1.0 + carried.speed_bonus
 	stats.focus_speed *= 1.0 + carried.speed_bonus
@@ -318,9 +321,9 @@ func _draw() -> void:
 		return
 	var blink_hidden := health.is_invulnerable() and int(_flicker_time / BLINK_SECONDS) % 2 == 1
 	if not blink_hidden:
-		var frame := stats.sprite
-		if int(_flicker_time / FLICKER_SECONDS) % 2 == 1 and PixelArt.has_sprite(stats.sprite + "_1"):
-			frame = stats.sprite + "_1"
+		var frame := sprite
+		if int(_flicker_time / FLICKER_SECONDS) % 2 == 1 and PixelArt.has_sprite(sprite + "_1"):
+			frame = sprite + "_1"
 		PixelArt.draw(self, frame, Vector2.ZERO, tint(), _hurt_flash_left > 0.0)
 		if state.wingmen_left > 0.0:
 			for side: float in [-1.0, 1.0]:

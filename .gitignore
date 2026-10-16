@@ -34,4 +34,10 @@ sound-takes/
 voice-takes/
 
 # Downloaded asset packs (raw zips, some with licenses that forbid redistribution); finished sprites go to assets/
-packs/
+# (gamekit: each pack's pack.yaml holds its license and is committed; the files are not)
+packs/**
+!packs/*/
+!packs/*/pack.yaml
+
+# Shoot'em Up (timberlate007) sprites: its license doesn't allow sharing the files, so they stay out of the public repo
+assets/art/sets/shootemup/

@@ -65,6 +65,8 @@ if ($exitCode -ne 0 -or -not (Test-Path $exe) -or ($output | Select-String -Patt
 }
 
 Copy-Item (Join-Path $PSScriptRoot "README-friends.txt") (Join-Path $outDir "README.txt")
+# Credits for the art packs (CC-BY ones require it to ship with the game).
+Copy-Item (Join-Path $project "CREDITS.md") (Join-Path $outDir "CREDITS.md")
 $zip = Join-Path $project "builds\VerticalScroller-$version-windows.zip"
 Compress-Archive -Path (Join-Path $outDir "*") -DestinationPath $zip -Force
 Write-Host "OK: built $exe" -ForegroundColor Green

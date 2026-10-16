@@ -1,0 +1,10 @@
+# Pack info for gamekit. Fill license from the pack's own license file or download page;
+# never guess. Assets from this pack use `license: {pack: tiny_ships}` in assets.yaml.
+name: tiny_ships
+license:
+  name: CC-BY 4.0
+  author: Disruptor Art
+  url: https://disruptorart.itch.io/tiny-ships-free-spaceships
+source_url: https://disruptorart.itch.io/tiny-ships-free-spaceships
+license_file: ''
+notes: ''

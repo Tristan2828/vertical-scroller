@@ -1,0 +1,10 @@
+# Pack info for gamekit. Fill license from the pack's own license file or download page;
+# never guess. Assets from this pack use `license: {pack: kenney_tanks}` in assets.yaml.
+name: kenney_tanks
+license:
+  name: CC0
+  author: Kenney (kenney.nl)
+  url: http://creativecommons.org/publicdomain/zero/1.0/
+source_url: https://kenney.nl/assets/top-down-tanks-remastered
+license_file: License.txt
+notes: ''

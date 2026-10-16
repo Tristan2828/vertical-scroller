@@ -7,6 +7,10 @@ extends RefCounted
 ##   name = Planet Base
 ##   length = 240          seconds of waves before the boss (M4)
 ##   scroll_speed = 60     pixels per second (60 = 1 px per tick, the smoothest)
+##   art = klaed           the art set (assets/art/sets/<set>/; PixelArt.art_set); none = the classic art
+##   use = planet_base.stage   read that stage file's lines here (same folder): a mission
+##                         that plays the same stage with other art. Put it first; the
+##                         settings after it (name, art) win. Ground ids stay the same.
 ##   wave <time> <enemy> <shape> [x=480] [y=-16] [count=1] [spacing=0.4] [dx=0] [pace=1] [mirror] [variant=a1]
 ##   ground <time> <type> x=<x> [mirror]
 ##   boss <type> [x=480]
@@ -68,6 +72,8 @@ class GroundDef:
 var name: String = ""
 var length: float = 240.0
 var scroll_speed: float = 60.0
+## The art set (PixelArt.art_set): "" = the classic art.
+var art: String = ""
 ## In file order.
 var waves: Array[WaveDef] = []
 ## In file order; the index is the ground object's id.
@@ -82,6 +88,12 @@ var boss_parts: Array[BossPartDef] = []
 var errors: PackedStringArray = PackedStringArray()
 
 
+## Stage files live here; `use = <file>` looks there too.
+const STAGE_DIR: String = "res://src/stage/stages/"
+## How deep `use` may nest (a file using itself would loop forever).
+const MAX_USE_DEPTH: int = 3
+
+
 static func load_file(path: String) -> StageDef:
 	if not FileAccess.file_exists(path):
 		var missing := StageDef.new()
@@ -92,6 +104,12 @@ static func load_file(path: String) -> StageDef:
 
 static func parse(text: String) -> StageDef:
 	var def := StageDef.new()
+	def._read(text, 0)
+	return def
+
+
+func _read(text: String, depth: int) -> void:
+	var def := self
 	var lines := text.split("\n")
 	for number: int in range(1, lines.size() + 1):
 		var line := lines[number - 1].get_slice("#", 0).strip_edges()
@@ -100,7 +118,10 @@ static func parse(text: String) -> StageDef:
 		if line.contains("="):
 			var first_word := line.get_slice(" ", 0)
 			if not first_word in ["wave", "ground", "boss", "boss_step", "boss_part"]:
-				def._parse_setting(number, line)
+				if line.get_slice("=", 0).strip_edges() == "use":
+					def._use(number, line.get_slice("=", 1).strip_edges(), depth)
+				else:
+					def._parse_setting(number, line)
 				continue
 		var words := line.split(" ", false)
 		match words[0]:
@@ -116,7 +137,17 @@ static func parse(text: String) -> StageDef:
 				def._parse_boss_part(number, words)
 			_:
 				def.errors.append("line %d: don't know '%s'" % [number, words[0]])
-	return def
+
+
+## `use = <file>`: that stage file's lines, read right here.
+func _use(number: int, file: String, depth: int) -> void:
+	var path := STAGE_DIR + file
+	if depth >= MAX_USE_DEPTH:
+		errors.append("line %d: 'use' nests too deep (does a file use itself?)" % number)
+	elif not FileAccess.file_exists(path):
+		errors.append("line %d: can't use '%s': no such stage file" % [number, file])
+	else:
+		_read(FileAccess.get_file_as_string(path), depth + 1)
 
 
 func has_boss() -> bool:
@@ -174,6 +205,8 @@ func _parse_setting(number: int, line: String) -> void:
 			length = _number(number, key, value)
 		"scroll_speed":
 			scroll_speed = _number(number, key, value)
+		"art":
+			art = value
 		_:
 			errors.append("line %d: unknown setting '%s'" % [number, key])
 

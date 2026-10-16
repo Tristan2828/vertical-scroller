@@ -309,6 +309,12 @@ func _take_screenshots() -> void:
 		_feedback.close()
 		return
 	await save_screenshot(get_tree(), "lobby%s.png" % role)
+	var lobby := _level.get_node_or_null("Lobby") as Lobby
+	if lobby != null and not LaunchOptions.autopilot:
+		# Without autopilot the lobby stays: show "Choose your ship" too, and stop there.
+		lobby.open_ship_picker()
+		await save_screenshot(get_tree(), "ship_picker%s.png" % role)
+		return
 	while _level.get_node_or_null("Stage") == null:
 		await get_tree().create_timer(0.5, true).timeout
 	var size := get_window().size

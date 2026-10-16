@@ -59,3 +59,47 @@ assets:
   - {id: hud_power, kind: icon, source: claude, status: todo, file: icons/hud_power.png, size: [9, 9], notes: 'power level: an arrow'}
   - {id: hud_bomb, kind: icon, source: claude, status: todo, file: icons/hud_bomb.png, size: [9, 10], notes: 'Mega Bomb charge'}
   - {id: hud_shield, kind: icon, source: claude, status: todo, file: icons/hud_shield.png, size: [9, 10], notes: 'Shield charge'}
+
+  # --- Art comparison (2026-10-16): one enemy set per test mission (Stage files: art = <set>),
+  #     and ship skins chosen in the lobby. Not final art. ---
+  - {id: set_klaed_drone, kind: sprite, source: pack, status: draft, file: art/sets/klaed/drone.png, size: [22, 22], license: {pack: void_klaed}, notes: 'Void Kla''ed Scout as the drone'}
+  - {id: set_klaed_fighter, kind: sprite, source: pack, status: draft, file: art/sets/klaed/fighter.png, size: [24, 22], license: {pack: void_klaed}, notes: 'Void Kla''ed Fighter as the fighter'}
+  - {id: set_klaed_gunship, kind: sprite, source: pack, status: draft, file: art/sets/klaed/gunship.png, size: [30, 27], license: {pack: void_klaed}, notes: 'Void Kla''ed Bomber as the gunship'}
+  - {id: set_klaed_kamikaze, kind: sprite, source: pack, status: draft, file: art/sets/klaed/kamikaze.png, size: [28, 28], license: {pack: void_klaed}, notes: 'Void Kla''ed Support ship as the kamikaze'}
+  - {id: set_nairan_drone, kind: sprite, source: pack, status: draft, file: art/sets/nairan/drone.png, size: [24, 22], license: {pack: void_nairan}, notes: 'Void Nairan Scout as the drone'}
+  - {id: set_nairan_fighter, kind: sprite, source: pack, status: draft, file: art/sets/nairan/fighter.png, size: [30, 27], license: {pack: void_nairan}, notes: 'Void Nairan Fighter as the fighter'}
+  - {id: set_nairan_gunship, kind: sprite, source: pack, status: draft, file: art/sets/nairan/gunship.png, size: [32, 30], license: {pack: void_nairan}, notes: 'Void Nairan Bomber as the gunship'}
+  - {id: set_nairan_kamikaze, kind: sprite, source: pack, status: draft, file: art/sets/nairan/kamikaze.png, size: [32, 27], license: {pack: void_nairan}, notes: 'Void Nairan Support ship as the kamikaze'}
+  - {id: set_nautolan_drone, kind: sprite, source: pack, status: draft, file: art/sets/nautolan/drone.png, size: [32, 28], license: {pack: void_nautolan}, notes: 'Void Nautolan Scout as the drone'}
+  - {id: set_nautolan_fighter, kind: sprite, source: pack, status: draft, file: art/sets/nautolan/fighter.png, size: [32, 27], license: {pack: void_nautolan}, notes: 'Void Nautolan Fighter as the fighter'}
+  - {id: set_nautolan_gunship, kind: sprite, source: pack, status: draft, file: art/sets/nautolan/gunship.png, size: [30, 24], license: {pack: void_nautolan}, notes: 'Void Nautolan Bomber as the gunship'}
+  - {id: set_nautolan_kamikaze, kind: sprite, source: pack, status: draft, file: art/sets/nautolan/kamikaze.png, size: [32, 34], license: {pack: void_nautolan}, notes: 'Void Nautolan Support ship as the kamikaze'}
+  - {id: set_shootemup_drone, kind: sprite, source: pack, status: draft, file: art/sets/shootemup/drone.png, size: [21, 17], license: {pack: shootemup}, notes: 'Shoot''em Up enemy as the drone'}
+  - {id: set_shootemup_fighter, kind: sprite, source: pack, status: draft, file: art/sets/shootemup/fighter.png, size: [32, 20], license: {pack: shootemup}, notes: 'Shoot''em Up enemy as the fighter'}
+  - {id: set_shootemup_gunship, kind: sprite, source: pack, status: draft, file: art/sets/shootemup/gunship.png, size: [45, 36], license: {pack: shootemup}, notes: 'Shoot''em Up enemy as the gunship'}
+  - {id: set_shootemup_kamikaze, kind: sprite, source: pack, status: draft, file: art/sets/shootemup/kamikaze.png, size: [21, 17], license: {pack: shootemup}, notes: 'Shoot''em Up enemy as the kamikaze'}
+  - {id: set_klaed_ground_tank, kind: sprite, source: pack, status: draft, file: art/sets/klaed/ground_tank.png, size: [19, 18], license: {pack: kenney_tanks}, notes: 'Kenney dark tank hull at half size (the game draws the turning barrel)'}
+  - {id: set_nairan_ground_tank, kind: sprite, source: pack, status: draft, file: art/sets/nairan/ground_tank.png, size: [19, 18], license: {pack: kenney_tanks}, notes: 'Kenney dark tank hull at half size (the game draws the turning barrel)'}
+  - {id: set_nautolan_ground_tank, kind: sprite, source: pack, status: draft, file: art/sets/nautolan/ground_tank.png, size: [19, 18], license: {pack: kenney_tanks}, notes: 'Kenney dark tank hull at half size (the game draws the turning barrel)'}
+  - {id: set_shootemup_ground_tank, kind: sprite, source: pack, status: draft, file: art/sets/shootemup/ground_tank.png, size: [19, 18], license: {pack: kenney_tanks}, notes: 'Kenney dark tank hull at half size (the game draws the turning barrel)'}
+  - {id: skin_tiny01, kind: sprite, source: pack, status: draft, file: art/skins/tiny01.png, size: [24, 25], license: {pack: tiny_ships}, notes: 'Tiny Ships #1, idle frame'}
+  - {id: skin_tiny02, kind: sprite, source: pack, status: draft, file: art/skins/tiny02.png, size: [34, 31], license: {pack: tiny_ships}, notes: 'Tiny Ships #2, idle frame'}
+  - {id: skin_tiny03, kind: sprite, source: pack, status: draft, file: art/skins/tiny03.png, size: [26, 26], license: {pack: tiny_ships}, notes: 'Tiny Ships #3, idle frame'}
+  - {id: skin_tiny04, kind: sprite, source: pack, status: draft, file: art/skins/tiny04.png, size: [28, 22], license: {pack: tiny_ships}, notes: 'Tiny Ships #4, idle frame'}
+  - {id: skin_tiny05, kind: sprite, source: pack, status: draft, file: art/skins/tiny05.png, size: [34, 30], license: {pack: tiny_ships}, notes: 'Tiny Ships #5, idle frame'}
+  - {id: skin_tiny06, kind: sprite, source: pack, status: draft, file: art/skins/tiny06.png, size: [40, 22], license: {pack: tiny_ships}, notes: 'Tiny Ships #6, idle frame'}
+  - {id: skin_tiny07, kind: sprite, source: pack, status: draft, file: art/skins/tiny07.png, size: [46, 35], license: {pack: tiny_ships}, notes: 'Tiny Ships #7, idle frame'}
+  - {id: skin_tiny08, kind: sprite, source: pack, status: draft, file: art/skins/tiny08.png, size: [32, 29], license: {pack: tiny_ships}, notes: 'Tiny Ships #8, idle frame'}
+  - {id: skin_tiny09, kind: sprite, source: pack, status: draft, file: art/skins/tiny09.png, size: [34, 30], license: {pack: tiny_ships}, notes: 'Tiny Ships #9, idle frame'}
+  - {id: skin_tiny10, kind: sprite, source: pack, status: draft, file: art/skins/tiny10.png, size: [40, 28], license: {pack: tiny_ships}, notes: 'Tiny Ships #10, idle frame'}
+  - {id: skin_tiny11, kind: sprite, source: pack, status: draft, file: art/skins/tiny11.png, size: [36, 27], license: {pack: tiny_ships}, notes: 'Tiny Ships #11, idle frame'}
+  - {id: skin_tiny12, kind: sprite, source: pack, status: draft, file: art/skins/tiny12.png, size: [26, 24], license: {pack: tiny_ships}, notes: 'Tiny Ships #12, idle frame'}
+  - {id: skin_tiny13, kind: sprite, source: pack, status: draft, file: art/skins/tiny13.png, size: [36, 36], license: {pack: tiny_ships}, notes: 'Tiny Ships #13, idle frame'}
+  - {id: skin_tiny14, kind: sprite, source: pack, status: draft, file: art/skins/tiny14.png, size: [52, 31], license: {pack: tiny_ships}, notes: 'Tiny Ships #14, idle frame'}
+  - {id: skin_tiny15, kind: sprite, source: pack, status: draft, file: art/skins/tiny15.png, size: [38, 25], license: {pack: tiny_ships}, notes: 'Tiny Ships #15, idle frame'}
+  - {id: skin_tiny16, kind: sprite, source: pack, status: draft, file: art/skins/tiny16.png, size: [28, 27], license: {pack: tiny_ships}, notes: 'Tiny Ships #16, idle frame'}
+  - {id: skin_tiny17, kind: sprite, source: pack, status: draft, file: art/skins/tiny17.png, size: [34, 24], license: {pack: tiny_ships}, notes: 'Tiny Ships #17, idle frame'}
+  - {id: skin_tiny18, kind: sprite, source: pack, status: draft, file: art/skins/tiny18.png, size: [32, 28], license: {pack: tiny_ships}, notes: 'Tiny Ships #18, idle frame'}
+  - {id: skin_tiny19, kind: sprite, source: pack, status: draft, file: art/skins/tiny19.png, size: [42, 27], license: {pack: tiny_ships}, notes: 'Tiny Ships #19, idle frame'}
+  - {id: skin_tiny20, kind: sprite, source: pack, status: draft, file: art/skins/tiny20.png, size: [44, 39], license: {pack: tiny_ships}, notes: 'Tiny Ships #20, idle frame'}
+  - {id: skin_void_main, kind: sprite, source: pack, status: draft, file: art/skins/void_main.png, size: [30, 26], license: {pack: void_mainship}, notes: 'Void main ship hull'}

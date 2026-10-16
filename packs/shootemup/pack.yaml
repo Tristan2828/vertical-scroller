@@ -1,0 +1,11 @@
+# Pack info for gamekit. Fill license from the pack's own license file or download page;
+# never guess. Assets from this pack use `license: {pack: shootemup}` in assets.yaml.
+name: shootemup
+license:
+  name: 'Custom: free for personal and commercial games, may be modified, no resale
+    (itch.io page)'
+  author: timberlate007
+  url: https://timberlate007.itch.io/shootem-up
+source_url: https://timberlate007.itch.io/shootem-up
+license_file: ''
+notes: ''

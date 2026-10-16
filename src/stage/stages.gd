@@ -5,6 +5,11 @@ extends RefCounted
 
 const PATHS: Array[String] = [
 	"res://src/stage/stages/planet_base.stage",
+	# Art comparison missions (the lobby's mission selector): Planet Base with other art.
+	"res://src/stage/stages/planet_base_klaed.stage",
+	"res://src/stage/stages/planet_base_nairan.stage",
+	"res://src/stage/stages/planet_base_nautolan.stage",
+	"res://src/stage/stages/planet_base_shootemup.stage",
 ]
 
 static var _cache: Dictionary[int, StageDef] = {}

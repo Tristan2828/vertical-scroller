@@ -1,0 +1,10 @@
+# Pack info for gamekit. Fill license from the pack's own license file or download page;
+# never guess. Assets from this pack use `license: {pack: void_klaed}` in assets.yaml.
+name: void_klaed
+license:
+  name: CC0
+  author: Foozle (art by Baldur)
+  url: http://creativecommons.org/publicdomain/zero/1.0/
+source_url: https://foozlecc.itch.io/void-fleet-pack-1
+license_file: Readme.txt
+notes: ''
