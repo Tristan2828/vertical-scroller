@@ -220,3 +220,4 @@ Permanent progression comes later: unlock ships, specials and boosts; maybe meda
 - 2D normal-map lighting.
 - Co-op-only bonus waves.
 - An in-game wave preview tool for editing stages.
+- **Try a Godot editor MCP (GDAI MCP or Coding-Solo godot-mcp) on a throwaway branch for a week.** It lets Claude read the live scene tree, debugger output and signal wiring, and edit scenes and `.tres` files through the editor instead of by hand. Keep it only if it saves trips to the editor; the `--run-for` / `--screenshot-dir` flags already cover much of this. It needs the editor open, so it does not work in cloud sessions. Check each project's recent commits first, and commit before a session since it can change the project live.
