@@ -33,8 +33,8 @@ music-takes/
 sound-takes/
 voice-takes/
 
-# Downloaded asset packs (raw zips, some with licenses that forbid redistribution); finished sprites go to assets/
-# (gamekit: each pack's pack.yaml holds its license and is committed; the files are not)
+# Downloaded asset packs now live in C:/Repos/game-asset-viewer/Art/ (some licenses forbid redistribution);
+# finished sprites go to assets/. gamekit: each pack's pack.yaml holds its license and is committed; the files are not.
 packs/**
 !packs/*/
 !packs/*/pack.yaml
